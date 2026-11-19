@@ -1,0 +1,22 @@
+# Machine-local configuration and credentials
+installation.json
+.env
+.env.*
+!.env.example
+*runtime.json
+credentials*
+cookies*
+# Generated work and caches
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.DS_Store
+generated/
+delivery/
+evidence/
+backups/
+*.mp4
+*.mov
+*.webm
+*.zip

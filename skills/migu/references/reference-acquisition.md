@@ -9,7 +9,7 @@
 
 ## 默认采集项目
 
-读取 installation.json 的 collection_root，先读该项目 AGENTS.md 及说明；只调用发现/下载能力，不启动 unattended 全生产、定时器或批量发布。
+读取 installation.json 的 collection_root（新部署默认指向随仓库提供的 toolkits/collector），先读该项目存在的 AGENTS.md 及说明；只调用发现/下载能力，不启动 unattended 全生产、定时器或批量发布。
 
 当前适配的项目入口（运行前核对文件及签名）：
 - `workflow/unattended/evil_discovery.py` 的 `probe_evil`、`try_evil_discovery`：从本机 Evil 服务找 TikTok 页面链接。请求中传当前产品，form_hints 中传本次目标语言查询词，限制候选数量和查询数。返回 degraded 时保存原因。

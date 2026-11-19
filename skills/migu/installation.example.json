@@ -2,5 +2,7 @@
   "schema_version": 1,
   "collection_root": null,
   "editor_toolkit_root": null,
-  "ffmpeg_path": null
+  "ffmpeg_path": null,
+  "distribution_root": null,
+  "hypit_path": null
 }

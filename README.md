@@ -1,88 +1,62 @@
 # migu
 
-面向各种商品的 TikTok AI 视频复刻工作流 skill。统一协调按需采集参考、Hypit 图片与视频生成、素材检查，以及 ChatCut / Remotion 剪辑。
+各种商品通用的 TikTok AI 复刻流程：按需找参考 → Hypit 实际生成图片/动态视频 → 素材验收 → ChatCut 剪辑与 Remotion 包装 → 成片复核。
 
-**这是流程 skill 和检查脚本，不是包含模型、账号、采集服务器及剪辑运行环境的一键应用。** 发布目录不含 API key、Cookie、客户素材、历史任务或本机配置。
+## 下载后怎么用
 
-## 工作方式
+在 Codex 中打开**整个仓库**，说：
 
-1. 分别检查图片与视频模型，确认是否沿用现有配置；同一任务已确定的不重复询问。
-2. 客户给参考视频或具体链接，直接使用，不另找替代；只有要求“找爆款”时才采集，默认优先 15–25 秒。
-3. 拆解完整参考，保留镜头职责、动作过程、顺序和节奏。换人物、换产品，操作按新产品真实结构调整；正常适配直接执行。
-4. 通过 Hypit 实际生成所需动态镜头，记录任务和输出，按动作与模型能力分段。
-5. 检查产品、人物、动作、画面和可用区间。不能用图文幻灯片替代 AI 视频，也不能把缺镜头当成正常改编。
-6. 需要成片时接入配套编辑器 skill，检查成片后交付。只要分析、提示词或素材时，不擅自扩大范围。
+> 部署 migu，补齐需要的环境。
 
-完整结构复刻不承诺逐帧/逐像素一致。模型生成失败、超预算、参考不可读等问题会如实记录；轮询不会重新提交生成。
+代理按根目录 AGENTS.md 执行统一安装，自动处理采集模块、剪辑工具箱及普通软件依赖，不需要逐项提醒。安装入口：
 
-## 目录
-
-```text
-skills/migu/                         主流程、参考说明、环境和素材检查脚本
-skills/tiktok-product-video-editor/  配套本地剪辑 skill（不含剪辑工具箱）
-tests/                              本地测试，使用合成数据，不调用生成服务
-docs/VALIDATION.md                   检查结果与尚未验证项
+```sh
+python3 scripts/install.py --apply
 ```
 
-## 安装
+Windows 可用 `py -3` 替换 `python3`。不带 --apply 只查看计划。安装失败后重复同一命令继续；具体说明见 [安装指南](docs/INSTALL.md)。不要只下载单个 SKILL.md。
 
-将 `skills/` 内的两个目录复制到你的全局 skills 目录（默认 `~/.codex/skills/`；若设置了 `CODEX_HOME`，使用其下的 `skills/`）。已有同名 skill 时先备份并对照差异，避免覆盖自定义内容。复制完成后，在能够发现新 skill 的会话中调用 `$migu`；正在执行的任务需要重新读取更新后的文件。
+**仓库已经包含采集模块与剪辑工具箱源码。** Python/Node 依赖、官方 Hypit、Evil 等按平台下载安装，不把作者机器的二进制、账号或密钥拷给客户。ChatCut 实际安装所需官方许可点击、本人登录与模型密钥仍需由使用者完成，其余步骤由代理接着执行。网络或系统限制会写入安装报告，不将尚未连接的环境标为就绪。
 
-将 `skills/migu/installation.example.json` 复制为安装位置中的 `migu/installation.json`，填写自己的实际目录；不使用的字段保持 null。该本机文件已被 `.gitignore` 排除。编辑器单独使用时，可将其示例复制为 `installation.json` 并填写 `toolkit_root`。
+## 包含什么
 
-```json
-{
-  "schema_version": 1,
-  "collection_root": null,
-  "editor_toolkit_root": null,
-  "ffmpeg_path": null
-}
-```
+| 内容 | 交付方式 |
+|---|---|
+| migu 主流程、配套剪辑 skill | skills/，安装到全局 skills 目录 |
+| 原有采集模块 | toolkits/collector/，包括 Evil 发现与 yt-dlp 下载入口 |
+| 原有剪辑工具箱 | toolkits/editor/，包括 Python 源码、Remotion 工程、锁文件、模板预览 |
+| 官方 Hypit | 安装时复用已有安装，或从官方 npm/仓库固定版本获取 CLI 和 skill |
+| yt-dlp、Python、Remotion 依赖 | 安装脚本按各自依赖文件准备 |
+| Docker/Evil | 发现路线复用已有服务，否则准备 Docker 和固定提交的 Evil browser 栈 |
+| ChatCut | 优先复用宿主连接；缺失时按官方安装与连接流程处理 |
+| 验证与恢复 | 只读预检、交接检查、回归测试、安装报告、skill 更新备份 |
 
-具体字段和只读检查说明见 [setup.md](skills/migu/references/setup.md)。不要将模型密钥写入上述文件；账号由 Hypit 的实际 Runtime/认证流程配置。
+[来源清单](toolkits/SOURCES.json)记录内置工具箱的来源快照。第三方许可证保留在对应目录或安装源中；主仓库尚未指定 LICENSE，不自动重新授权第三方软件。
 
-## 运行依赖
+## 默认行为
 
-| 路线 | 额外依赖 | 本仓库是否包含 |
-|---|---|---|
-| 分析/拆解 | 能读取参考的代理环境；实际视频分析能力按环境提供 | 不提供代理宿主或视频理解模型 |
-| AI 图片/视频生成 | 官方 Hypit CLI、hypit skill、所选模型端点和客户自己的账号 | 不包含 |
-| 代找爆款 | 适配的 tiktok-video-workflow 采集项目、yt-dlp；该项目的 Evil 搜索服务或允许的搜索降级路线 | 不包含 |
-| 给定链接下载 | 可用的 yt-dlp 或已配置下载路线 | 不包含 |
-| 剪辑成片 | ChatCut Desktop/MCP、Remotion、配套剪辑工具箱及其 Python/Node 依赖 | 仅包含编辑器 skill |
-| 素材技术检查 | Python 3.11+、ffmpeg；ffprobe 为可选增强检查 | 包含 Python 检查脚本，不包含二进制 |
-
-采集项目应含 `workflow/unattended/evil_discovery.py` 和 `workflow/collection/collector.py`。剪辑工具箱应含 `scripts/package_remotion.py`、`scripts/deliver_video.py`、`docs/`、`remotion/` 等文件；缺工具箱时仅复制编辑器 skill 无法完成整条剪辑路线。本仓库不修改这些工具的授权或付费范围。
+- 图片、视频模型分别核对；已确定的选择不重复询问。
+- 只有客户要求找爆款才搜索，优先 15–25 秒。客户给片则完整复刻，不套时长上限。
+- 保留原片完整结构、镜头职责、动作过程、顺序与节奏；操作按当前商品真实结构适配，适用于各类商品。
+- 实际调用 Hypit 生成动态视频，不能用图文幻灯片交差。官方模型输出不保证逐帧相同。
+- 成片请求自动接续剪辑、检查；默认无 BGM，静音或口播按当前任务。
+- 超时先恢复原 Build，不重复提交；账号和费用按当前授权，不因安装完成就开始付费生成。
 
 ## 使用示例
 
-- `用 $migu 找一个厨房收纳产品的 TikTok 爆款，换成我的产品并复刻成片。`
-- `用 $migu 按我提供的视频复刻，换人物和商品，保留完整结构与节奏；操作按我的产品来。`
+- `用 $migu 找一个厨房收纳产品的 TK 爆款，换成我的产品并复刻成片。`
+- `用 $migu 按我提供的视频复刻，换人物和商品，保留完整结构和节奏。`
 - `用 $migu 只拆解这条服装视频，不生成。`
-- `用 $migu 生成这组商品演示素材，先不剪辑。`
 
-默认剪辑配置为无背景音乐；静音或口播按本次要求。图片和视频费用分别核对，已有授权范围内继续执行，增加付费范围时才请求新的决定。
+## 配置与检查
 
-## 本地验证
-
-从仓库根目录运行：
+安装程序自动填写全局 migu/installation.json，本机文件不进 Git。已有有效采集/剪辑路径优先保留；新机器默认使用本仓库 toolkits。账号由对应程序的认证流程设置，不写进本机路径配置。
 
 ```sh
+python3 skills/migu/scripts/preflight.py --route full --config /path/to/installed/migu/installation.json
 python3 -m unittest discover -s tests -v
-python3 skills/migu/scripts/preflight.py --route analyze
-python3 skills/migu/scripts/preflight.py --route full --config skills/migu/installation.json
 ```
 
-Windows 使用已安装的 Python 命令。没有 ffmpeg 时真实媒体测试会跳过；要完成这些测试，安装 ffmpeg 或将 `MIGU_TEST_FFMPEG` 设为已有二进制的绝对路径。测试不连接 Hypit、TikTok 或 ChatCut，不花生成积分。`full` 预检在未配置环境上返回缺项是预期行为，不代表安装完成。
+真实媒体测试需要 ffmpeg，可用 MIGU_TEST_FFMPEG 指定。安装脚本的 --skills-dir 支持独立测试目录。退出码 0 表示本地阶段完成、1 表示失败、2 表示仍有账号/服务/环境动作要继续；不能把 2 当作全链路部署完成。
 
-素材交接检查：
-
-```sh
-python3 skills/migu/scripts/check_handoff.py /path/to/project/handoff.json --ffmpeg /path/to/ffmpeg
-```
-
-清单字段见 [progress-and-evidence.md](skills/migu/references/progress-and-evidence.md)。脚本验证本地文件、哈希、解码、证据关联和已登记镜头覆盖；不能独立证明 AI 来源、视觉质量或原片镜头清单是否完整。实际逐镜复核仍必需。
-
-## 发布范围与验证状态
-
-见 [验证报告](docs/VALIDATION.md)。真实账号生成、TikTok 采集和 ChatCut 成片需要在目标环境验收，不能用本地单元测试代替。此版本未附带开源许可证；发布者可按自己的分发计划另行选定 LICENSE。第三方程序和依赖不随本仓库重新授权。
+本地文件、哈希与解码校验不证明画面质量或原片清单完整；实际逐镜复核仍必需。原始检查见 [验证记录](docs/VALIDATION.md)，本次完整安装升级验证见 [安装验证记录](docs/INSTALL-VALIDATION.md)。

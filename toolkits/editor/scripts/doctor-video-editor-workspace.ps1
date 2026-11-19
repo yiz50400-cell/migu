@@ -1,0 +1,143 @@
+[CmdletBinding()]
+param(
+    [string]$Config,
+    [switch]$Help
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[Console]::InputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
+$OutputEncoding = $utf8NoBom
+$env:PYTHONUTF8 = "1"
+
+if ($Help) {
+    Write-Output "Usage: powershell -File scripts/doctor-video-editor-workspace.ps1 [-Config <local-config-path>]"
+    Write-Output "Read-only check for the standalone TikTok product video editor workspace."
+    exit 0
+}
+
+function Test-LocalCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+$workspaceRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+$bundledBin = Join-Path $workspaceRoot ".tools\bin"
+if (Test-Path -LiteralPath $bundledBin -PathType Container) {
+    $env:Path = "$bundledBin;$env:Path"
+}
+
+function Test-NativeCommand {
+    param([Parameter(Mandatory = $true)][scriptblock]$Command)
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $Command 2>&1 | Out-Null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+}
+
+function Resolve-PythonForVideo {
+    if ((Test-LocalCommand "python") -and (Test-NativeCommand { & python --version })) {
+        return "python"
+    }
+    if ((Test-LocalCommand "py") -and (Test-NativeCommand { & py --version })) {
+        return "py"
+    }
+    if (Test-LocalCommand "uv") {
+        try {
+            $candidate = (& uv python find 3.12 2>$null | Select-Object -First 1)
+            if ($candidate) {
+                $candidate = $candidate.Trim()
+                if ((Test-Path -LiteralPath $candidate -PathType Leaf) -and (Test-NativeCommand { & $candidate --version })) {
+                    return $candidate
+                }
+            }
+        } catch {
+            return $null
+        }
+    }
+    return $null
+}
+
+$configPath = if ($Config) {
+    $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Config)
+} else {
+    Join-Path $workspaceRoot "config\video-editor.local.yaml"
+}
+
+$hasWinget = Test-LocalCommand "winget"
+$hasUv = Test-LocalCommand "uv"
+$hasFfmpeg = Test-LocalCommand "ffmpeg"
+$hasFfprobe = Test-LocalCommand "ffprobe"
+$hasConfig = Test-Path -LiteralPath $configPath -PathType Leaf
+
+$pythonCommand = Resolve-PythonForVideo
+$pythonRunnable = $null -ne $pythonCommand
+
+$ffmpegRunnable = $hasFfmpeg -and (Test-NativeCommand { & ffmpeg -version })
+$ffprobeRunnable = $hasFfprobe -and (Test-NativeCommand { & ffprobe -version })
+
+# Optional TTS backends (informational; missing TTS does not fail doctor because the visual-only path still works).
+$kokoroReady = $false
+$edgeTtsReady = (Test-LocalCommand "edge-tts")
+if ($hasUv) {
+    $kokoroReady = Test-NativeCommand { & uv run --project $workspaceRoot --no-sync python -c "import kokoro, soundfile" }
+    if (-not $edgeTtsReady) {
+        $edgeTtsReady = Test-NativeCommand { & uv run --project $workspaceRoot --no-sync python -c "import edge_tts" }
+    }
+}
+$ttsWarnings = [System.Collections.Generic.List[string]]::new()
+# winget is only needed by bootstrap to install missing tools; never a failure on its own.
+$environmentWarnings = [System.Collections.Generic.List[string]]::new()
+if (-not $hasWinget) { $environmentWarnings.Add("winget_missing_manual_install_needed_for_missing_tools") }
+if (-not $kokoroReady -and -not $edgeTtsReady) { $ttsWarnings.Add("tts_backend_missing_voiceover_unavailable") }
+
+$failureCodes = [System.Collections.Generic.List[string]]::new()
+if (-not $hasUv) { $failureCodes.Add("uv_missing") }
+if (-not $pythonRunnable) { $failureCodes.Add("python_missing") }
+if (-not $ffmpegRunnable) { $failureCodes.Add("ffmpeg_missing") }
+if (-not $ffprobeRunnable) { $failureCodes.Add("ffprobe_missing") }
+if (-not $hasConfig) { $failureCodes.Add("video_editor_config_missing") }
+
+[pscustomobject]@{
+    schema_version = 1
+    workspace_root = $workspaceRoot
+    config_path = $configPath
+    video_editor_environment = [pscustomobject]@{
+        winget_available = $hasWinget
+        uv_available = $hasUv
+        python_available = $pythonRunnable
+        python_path = $pythonCommand
+        ffmpeg_available = $ffmpegRunnable
+        ffprobe_available = $ffprobeRunnable
+        config_exists = $hasConfig
+        failure_codes = @($failureCodes)
+        warnings = @($environmentWarnings)
+    }
+    voiceover_environment = [pscustomobject]@{
+        kokoro_available = $kokoroReady
+        edge_tts_available = $edgeTtsReady
+        install_hint = "uv sync --project . --extra kokoro   (es-MX/pt-BR)  |  uv sync --project . --extra edge-tts   (all incl. id-ID, needs internet)"
+        warnings = @($ttsWarnings)
+    }
+    host_checks_still_required = @(
+        "current_codex_loads_tiktok_product_video_editor_skill",
+        "employee_material_can_be_probed",
+        "employee_material_can_render_h264_mp4_after_script_approval",
+        "voiced_mp4_has_aac_audio_and_srt_after_script_approval"
+    )
+    performed_external_writes = $false
+} | ConvertTo-Json -Depth 6
+
+if ($failureCodes.Count -gt 0) {
+    exit 1
+}
+exit 0

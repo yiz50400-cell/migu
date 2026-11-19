@@ -22,4 +22,4 @@
 
 ## 可移植性
 
-本机 installation.json 只记录 `collection_root`、`editor_toolkit_root` 及可选的 `ffmpeg_path`。迁移到另一台机器时重配路径，不复制账号、客户项目、Runtime 密钥或浏览器状态。需要安装的依赖包括 Hypit CLI 与 skill、采集项目（仅发现路线）、yt-dlp（远程视频下载）、现有剪辑 skill/工具箱、ChatCut MCP 与 Remotion（需剪辑时）。这不是一次隐式环境安装授权。
+本机 installation.json 记录 `distribution_root`、`collection_root`、`editor_toolkit_root` 及可选的 `hypit_path`、`ffmpeg_path`。迁移到另一台机器时重配路径，不复制账号、客户项目、Runtime 密钥或浏览器状态。采集模块与剪辑工具箱已随完整仓库提供，scripts/install.py 负责依赖安装与路径配置。用户已请求部署时自动完成普通安装，不反复询问；本人登录、密钥与官方许可点击单独处理。

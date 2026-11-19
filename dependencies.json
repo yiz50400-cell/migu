@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "python": "3.12",
+  "uv": "0.12.15",
+  "node": "22.15.0",
+  "hypit": "0.3.2",
+  "hypit_skill": {
+    "repository": "https://github.com/hypit-ai/hypit.git",
+    "commit": "25454bed40bbb09eaf675e217ed9901fa8ef4f2a",
+    "path": "skills/hypit"
+  },
+  "evil": {
+    "repository": "https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git",
+    "commit": "3c045e11aecd58ab076562f1246931b9dd5d909b"
+  }
+}

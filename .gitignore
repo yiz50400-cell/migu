@@ -20,3 +20,15 @@ backups/
 *.mov
 *.webm
 *.zip
+
+# Managed installation and toolkit runtime data
+.runtime/
+.tools/
+*.egg-info/
+*.sqlite
+*.sqlite3
+*.db
+secrets/
+logs/
+rendered/
+__MACOSX/

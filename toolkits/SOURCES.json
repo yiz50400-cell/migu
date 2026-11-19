@@ -1,0 +1,588 @@
+{
+  "date": "2026-11-19",
+  "note": "User-owned toolkit snapshot; selected working files include uncommitted feature work. Not a pristine upstream commit. No environments or customer assets copied. Bundled editor AGENTS.md adjusts skill lookup for this layout; original snapshot hashes below identify source inputs.",
+  "editor_base_commit": "ec9bcddd3112777b1e24d0cd17d9a19fe302dc07",
+  "collector_base_commit": "c371cf3c87325861df2c6ff735f7b87b8aea5c33",
+  "files": [
+    {
+      "path": "toolkits/editor/.python-version",
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d"
+    },
+    {
+      "path": "toolkits/editor/AGENTS.md",
+      "sha256": "e7f3868c236c83d95555004ebeb298136d526ba835185519fb4a6b4ce52e410d"
+    },
+    {
+      "path": "toolkits/editor/VERSION",
+      "sha256": "cc11b28a7a883e61ff0d2ea9d6c61e0efa0e1655fa6b9175e379445bec8c1c55"
+    },
+    {
+      "path": "toolkits/editor/assets/video/default_cart_arrow_down_red.png",
+      "sha256": "453a4b50c9e361025bfd1143138f984d2d4ea12f889d4a6a4822ef0ce3aed032"
+    },
+    {
+      "path": "toolkits/editor/assets/video/overlays/preferred_cart.png",
+      "sha256": "8de0cae37f6bd1d3428ae715b1f3470d95bd3298819d59eb5451f452ca4e1810"
+    },
+    {
+      "path": "toolkits/editor/assets/video/overlays/preferred_down_arrow.png",
+      "sha256": "7424afc8b7a3bf0fac5863b9783d81198de828c89e9a5c4168c2fec505130bf0"
+    },
+    {
+      "path": "toolkits/editor/assets/video/overlays/preferred_usage.txt",
+      "sha256": "20f034129723d694460cadf3ac29485dca41c725e9990ee5e5852a085c4375d8"
+    },
+    {
+      "path": "toolkits/editor/config/capabilities.yaml",
+      "sha256": "519a92f35dd2956331ec3296de17b337af1b7265621fa503a4248f0027b40c08"
+    },
+    {
+      "path": "toolkits/editor/config/chatcut-mcp.macos.example.toml",
+      "sha256": "1e8f0ef6040d82c1b65c0939b83c53da8f7e69a26d64ef56f956d48e346d8627"
+    },
+    {
+      "path": "toolkits/editor/config/chatcut-mcp.windows.example.toml",
+      "sha256": "ca46fe451194572531fd160a0b369dded98c53e80a9dba84ab9f611d03212c4c"
+    },
+    {
+      "path": "toolkits/editor/config/packaging-storyboard.example.json",
+      "sha256": "03f52d6604b8f1f4cc91e4503d5f42a4aab86e7c472c8c4af1720e1cbd875ea5"
+    },
+    {
+      "path": "toolkits/editor/config/remotion-package.example.json",
+      "sha256": "5f2a9bde881b2175509fe61f2cb6ae261dc2933d7b7a2da803c94f92fcff1456"
+    },
+    {
+      "path": "toolkits/editor/config/video-editor.example.yaml",
+      "sha256": "eccc3d0acc1a951faf09de1202975a3af77817fd104edfe2813ba34995490b1c"
+    },
+    {
+      "path": "toolkits/editor/config/video-showcase.example.json",
+      "sha256": "3e2468b8074683e74955af5e705148a04dffcd838371de34b8e9f2338d97b9ec"
+    },
+    {
+      "path": "toolkits/editor/config/voiceover.example.json",
+      "sha256": "f79c68ed67a3baf80245ff48396cdc4298ceb9a77de1af52f1f0c63544b0c78d"
+    },
+    {
+      "path": "toolkits/editor/docs/chatcut-remotion-workflow.md",
+      "sha256": "2b368d6ae4cbf65604c6b4ce029b2643dcf1d5f842065cf94a61bfbd2ea26f15"
+    },
+    {
+      "path": "toolkits/editor/docs/local-editing-workflow.md",
+      "sha256": "9b79603b32848b7c2784a335a8cb774f561ab8d45a548afc52c10de9415a04f6"
+    },
+    {
+      "path": "toolkits/editor/docs/template-guided-editing.md",
+      "sha256": "adb303f92ae7b1abbf3e0cd6d8b719130005d65a4df86f6fff3bbcdcae49c89d"
+    },
+    {
+      "path": "toolkits/editor/pyproject.toml",
+      "sha256": "4f8703358d0efb81cd8bdd984622a7bb651199db82f4804491c47568281ab2fe"
+    },
+    {
+      "path": "toolkits/editor/remotion/.gitignore",
+      "sha256": "aec949d1fbf80687da7f6059290d2f7d0515f759903f774075f7957ca71667da"
+    },
+    {
+      "path": "toolkits/editor/remotion/.prettierrc",
+      "sha256": "10e86224d2f90945fbe57db21ac109bdb0ce9b5d7470e7b78fa5f8b6d49a1afd"
+    },
+    {
+      "path": "toolkits/editor/remotion/README.md",
+      "sha256": "354c8966607f7f867eede6d80a03e26d478ddfecf66b0d17d60a048d2215fd54"
+    },
+    {
+      "path": "toolkits/editor/remotion/eslint.config.mjs",
+      "sha256": "7f2ca640409fd597965bedf929073b9a74f143643e1711150c4cac3b6ec5c80d"
+    },
+    {
+      "path": "toolkits/editor/remotion/package-lock.json",
+      "sha256": "d5f4d2ee9746526f1e832304aa21ae35904ea4586ae15ca7a1e77bdd0130cdb6"
+    },
+    {
+      "path": "toolkits/editor/remotion/package.json",
+      "sha256": "748f8a077674168bf196e2335de67cd23ba5607b2d34be6c05b8301356ed38a2"
+    },
+    {
+      "path": "toolkits/editor/remotion/preview.mjs",
+      "sha256": "23f8451736309c6d98d64cd1f5ae259326b8ee2d7fc25f21751b082a894376f9"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/classic.png",
+      "sha256": "432b85e6ed61cabb43d5673a6eb35b55f208432aca1821669db9a4f17d574c88"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/comparison-review.png",
+      "sha256": "ef1d6f58b0a1d4e1356b38a4ef6e377fbad361b8299f74439b57a4b948cdb2b4"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/comparison.jpg",
+      "sha256": "25b2cb1e4e4f996d9d954123aa7229e4e25e9eaadf1e2ef9ba96522af7838fc0"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/kinetic-product.png",
+      "sha256": "e4c1517c44b9ef3dba38fd25f9b67237d5b27285c9a865a3896e4bd0cbf49078"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/minimal-luxe.png",
+      "sha256": "b299a631947abc69d1e5b89330245ce1d7bbddc646ca876cab29aaa3811eb5ca"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/step-guide.png",
+      "sha256": "461f0c718cda99d81b741e5a3daa70268beeaebd69718a6d74fca4e7fe99afcd"
+    },
+    {
+      "path": "toolkits/editor/remotion/previews/unboxing-reveal.png",
+      "sha256": "684d22e5f9ab0682ff5e8c28945f803274b42811c980faf08544c8d9b30a2c9a"
+    },
+    {
+      "path": "toolkits/editor/remotion/remotion.config.ts",
+      "sha256": "826eff9854f277a6de943d5f27fd0a82792b3eea45de0687199eba8865b19d63"
+    },
+    {
+      "path": "toolkits/editor/remotion/render.mjs",
+      "sha256": "fa48cf151d8f4411f0aaccdbe4bd528a3fde40ec65d57c8fc6b4dcdcdac377ec"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/Composition.tsx",
+      "sha256": "dccffa9af52f60bdb3774bff47df396421cd92f8269ee6f33f379eb9b69e9f7b"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/KineticProduct.tsx",
+      "sha256": "208d67699f651101392704c7b13af225aa181ca9febd0daf8c1c304cf0412884"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/ProductVariants.tsx",
+      "sha256": "4accc23e0b582a662913f792438616c7a78df21a502d80c5fba23905d703ca83"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/Root.tsx",
+      "sha256": "3f872f31de62f5705ca5e47a8bf016aec23f6b0e7145c07516aa9dd8fc66ad3f"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/TemplatePackaging.tsx",
+      "sha256": "ed6717133d35f4e0b1aa17d96c76d055ec8fc84366ae64231d1dc58f49ed17b4"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/index.ts",
+      "sha256": "957e481dd33a29b4a55ae0e95dbf763b7e48c37c427ca4bd1275faf34bc07a74"
+    },
+    {
+      "path": "toolkits/editor/remotion/src/text-layout.ts",
+      "sha256": "9b485d4fcacaa74834b781c5bfa6681294fe4a6c976a3d7f730b09b708e6cafb"
+    },
+    {
+      "path": "toolkits/editor/remotion/templates.json",
+      "sha256": "34422e585b310a01698429a889c68f51b3cc443237f310ee51966e7fded8c24b"
+    },
+    {
+      "path": "toolkits/editor/remotion/third-party/motiongit-385712/LICENSE",
+      "sha256": "8881ef9bfbb1b6eab92a957272ca12b7dfe5b76c751513840c94d9a9842a8d70"
+    },
+    {
+      "path": "toolkits/editor/remotion/third-party/motiongit-385712/basic.js",
+      "sha256": "74df05aea6a3f5e235b13187390730730a699076bb79cf8f3f5e83f5ca90ba33"
+    },
+    {
+      "path": "toolkits/editor/remotion/third-party/motiongit-385712/provenance.json",
+      "sha256": "e36d3aec4fe86edd6e08fcfdaad12500424fbf9228e3050e70b3970790fc3d85"
+    },
+    {
+      "path": "toolkits/editor/remotion/tsconfig.json",
+      "sha256": "a6fbcf514dbfd3d116c3f7f78b72949c8c2ff45bdbe17aeff4c97e16bc1327fa"
+    },
+    {
+      "path": "toolkits/editor/scripts/__init__.py",
+      "sha256": "379c186c5f3835b1f05d27e4658e38ab32c0da903f0de9a8919806afdfeefc68"
+    },
+    {
+      "path": "toolkits/editor/scripts/add-voiceover-subtitles.ps1",
+      "sha256": "8ed0b357e05e07be7060d257e7d460ae6594431107be953af21bc6021d5cd13c"
+    },
+    {
+      "path": "toolkits/editor/scripts/analyze_video.py",
+      "sha256": "b5352004e7b54be047deac463db03cf72b7374d09810d11de205310cbe2fa6bc"
+    },
+    {
+      "path": "toolkits/editor/scripts/analyze_video_repetition.py",
+      "sha256": "6054c15115f0a2807d6f5007d81d3a49e56fce8fc8d8a0c2fa2499f2a7697ee9"
+    },
+    {
+      "path": "toolkits/editor/scripts/bootstrap-video-editor-workspace.ps1",
+      "sha256": "d08f6e379bfed56da3170896269406a5f1765d70c74b3020d3adb368beeb9fb4"
+    },
+    {
+      "path": "toolkits/editor/scripts/chatcut_health.py",
+      "sha256": "b1c176900b4480bb8fba652ba737071d8e6434d5d4abd984e8c2bd20e9bce5d5"
+    },
+    {
+      "path": "toolkits/editor/scripts/check.py",
+      "sha256": "f353dcff51d026c8e818c668f828fd388d20eedc310405991e481a1846708893"
+    },
+    {
+      "path": "toolkits/editor/scripts/check_desktop_codex.cjs",
+      "sha256": "80cad984a96e39ba97ada78eda529323ab7769a6625779fd86d142a5701f4f2a"
+    },
+    {
+      "path": "toolkits/editor/scripts/check_windows.bat",
+      "sha256": "6587b462c63dcc18088aa7ff5a637c3aec04036eade4dcb9b789a82648a7fc55"
+    },
+    {
+      "path": "toolkits/editor/scripts/check_windows_engine.py",
+      "sha256": "4ac90913ae0c9f0e36f63858ea97dd2211edfc5365cf7f07186b57bb10a63075"
+    },
+    {
+      "path": "toolkits/editor/scripts/deliver_chatcut.py",
+      "sha256": "61ccdc25d89e2f99a0503c00ade2b10847dcfb9a429147a3264b520ed323a03c"
+    },
+    {
+      "path": "toolkits/editor/scripts/deliver_video.py",
+      "sha256": "3c8d779fa82c9d798599642de039da209efc60f899443feb99b4bc7be252d6ff"
+    },
+    {
+      "path": "toolkits/editor/scripts/doctor-video-editor-workspace.ps1",
+      "sha256": "e04e2b45834e98d3d62fead0a420b335850d8db254ff34d2993eadddae23eca4"
+    },
+    {
+      "path": "toolkits/editor/scripts/generate_delivery_manifest.py",
+      "sha256": "7f5bdb0ef99e02b872ea974cde52e234287593bcdbb4d32f149a229d317d3c64"
+    },
+    {
+      "path": "toolkits/editor/scripts/make_dynamic_cart_arrow.py",
+      "sha256": "6d4b4ee58ddb4c838832e1b517fdf1c1a22e9c80a68426543866682ca8228907"
+    },
+    {
+      "path": "toolkits/editor/scripts/make_straight_down_arrow.py",
+      "sha256": "8e2f5de42cd52e857b147f060d85c557ef0038d599f70f7514e28c2d22a8d759"
+    },
+    {
+      "path": "toolkits/editor/scripts/mcp.py",
+      "sha256": "01d67d715a867cb6d9d40a09c1e340a27562de6f72bec520683b0b3a1784cc3b"
+    },
+    {
+      "path": "toolkits/editor/scripts/package_remotion.py",
+      "sha256": "629bdf037123575a21cc710141480c7bd921da4c113ac4075dbd5c0d8b84616d"
+    },
+    {
+      "path": "toolkits/editor/scripts/plan_video.py",
+      "sha256": "76a341428bfd8a02312ea43d68dc3d620750269a11e6ec07fc0432c034f40185"
+    },
+    {
+      "path": "toolkits/editor/scripts/prepare_chatcut.py",
+      "sha256": "ea3bec942bbf696580d83887bf8538c80ceb7c8ed34585f477aca3988ba48718"
+    },
+    {
+      "path": "toolkits/editor/scripts/prepare_market_preflight.py",
+      "sha256": "7ed4a070c14126b6000b69c529083e31a458a1948509122c8a96609b2bc03f43"
+    },
+    {
+      "path": "toolkits/editor/scripts/prepare_packaged_video.py",
+      "sha256": "7fa0ed6019ba0fca6684a028bcdab81e2874bcecc420f35f1cc92a3545199a22"
+    },
+    {
+      "path": "toolkits/editor/scripts/prepare_publish.py",
+      "sha256": "6aabd6b4940dbce2ca69876a8779f57b056029666f1f74ce720cb82011c86454"
+    },
+    {
+      "path": "toolkits/editor/scripts/produce_video.py",
+      "sha256": "9ebc95c6069d0b8dd96f224b1b3bb1c8f5182240f070d72973ec4c5a84e1ea2f"
+    },
+    {
+      "path": "toolkits/editor/scripts/render-video-showcase.ps1",
+      "sha256": "51689466f2fed26aa7d711694ce025e86425ae4159850b8f22fd3849b9766666"
+    },
+    {
+      "path": "toolkits/editor/scripts/repair_video.py",
+      "sha256": "63ef080c17ba2704d17db1d86ad13b4434fb9f2b64eebec882fe22c78fdd1bf1"
+    },
+    {
+      "path": "toolkits/editor/scripts/run_local_batch.py",
+      "sha256": "99798ddbfe4682e4a164806e24f6867d420c1dfeb082a444d641801aac0f5860"
+    },
+    {
+      "path": "toolkits/editor/scripts/start.bat",
+      "sha256": "ac05efce86dafab949e83e2cdfaa14ba61f367d34d88800701d5d229172132a7"
+    },
+    {
+      "path": "toolkits/editor/scripts/start.sh",
+      "sha256": "75d036b5515f4c96a17df2baf2cb9912cf9d7186e93d053f5637da815cce29a3"
+    },
+    {
+      "path": "toolkits/editor/scripts/verify-video-delivery.ps1",
+      "sha256": "6749bfb31a781ca4a8da22e4c0d29af5807d99248137569b48477728cff35dfe"
+    },
+    {
+      "path": "toolkits/editor/scripts/verify_packaged_video.py",
+      "sha256": "05923ea088b4a9e1ff6d3b33f7dc48ce5ae498067299c1086ff35badcd94a982"
+    },
+    {
+      "path": "toolkits/editor/scripts/workflow.py",
+      "sha256": "164b675e6444f49e6325a38603db8a07a61b71f0e61ffbc72e2905af191d79ab"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/__init__.py",
+      "sha256": "a7f4934e2ad4fdbf188a99ba8db1516c5f276a29c646371b58a414e9263ab321"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/__main__.py",
+      "sha256": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/catalog.py",
+      "sha256": "b8a2901f01924e4b7c7be704d761b15d850f956fc95dacf1cbcff0a01360da4f"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/cli.py",
+      "sha256": "e52858983ea98649f6a5504673b5747954ee1dfdb3c51fb7325a6daff054e66d"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/config.py",
+      "sha256": "59d05d1188f2b3db387e8b9612fe92370c1aac6cc1af3fc7d5b9596e7792f5ab"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/doctor.py",
+      "sha256": "e27df6ebbd8a2ed2638c859fa2d2f0bbc73c5e2a8ed93f21da0381c205e89c54"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/media.py",
+      "sha256": "6c7753e8104531ca8bf26a4f31ea4d883e742905d7543a7b73b3719d2b70d067"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/models.py",
+      "sha256": "79741aae0918a4f66178e137b5d635e7f3889acf199f35dff65a63da9d83079f"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/qa.py",
+      "sha256": "d80cf76e74ba230a62eca572d0b060abf9f11235684d673227c9628f026de34f"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/render.py",
+      "sha256": "809d1193be5912348bcbac5509afb8c5c275df14eef96c8cea55a01f7e63213c"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/video_compliance.py",
+      "sha256": "bd8db4e73ee773d25526f4fc4d4d063b4d03608c5d806447570173c5eafa64ae"
+    },
+    {
+      "path": "toolkits/editor/src/tk_ops_workspace/voiceover.py",
+      "sha256": "5d7edd5013ea3758ce104b28fde9a19f99650ceef6da1275421939c11ce439fd"
+    },
+    {
+      "path": "toolkits/editor/uv.lock",
+      "sha256": "4a7eb7b131c79dd4aca7688b2b156dc5d8fe7070d8c6f0bb8522e657b4d922f1"
+    },
+    {
+      "path": "toolkits/editor/workflow/__init__.py",
+      "sha256": "632051204db48d4d8e8def81b32a9b151cca2378f018fbd21375bcb39ea88581"
+    },
+    {
+      "path": "toolkits/editor/workflow/analysis/__init__.py",
+      "sha256": "ac81c3e9a0843ca45e1479ec35feae01fd9beb5837a51cbf4a52d21fb06919c3"
+    },
+    {
+      "path": "toolkits/editor/workflow/analysis/core.py",
+      "sha256": "1833348eb6ab14932c697d500f14b04e0ce1607065fb42572d226aa44f5eb49a"
+    },
+    {
+      "path": "toolkits/editor/workflow/analysis_attachment.py",
+      "sha256": "1bad68b61f644f164b97b22269867123275aed7ff779baba13d7431d5584883d"
+    },
+    {
+      "path": "toolkits/editor/workflow/api.py",
+      "sha256": "c3040b5ed4bfc2f25decfaaa6601b16cc70cdc688c0f3fa4ef13ba92e02328e1"
+    },
+    {
+      "path": "toolkits/editor/workflow/batch.py",
+      "sha256": "6e97b570ef2cd5033cbcb841bf226299067d8d34494a985129cd899e71f077ce"
+    },
+    {
+      "path": "toolkits/editor/workflow/chatcut/__init__.py",
+      "sha256": "0d9af9d26131233ba36cbc91934512a77a0c67f930b1b7a1cffde33c891c912b"
+    },
+    {
+      "path": "toolkits/editor/workflow/chatcut/health.py",
+      "sha256": "ea4823f3549e1c37c6b9afb6229e126a8fce94256cb599db3829f881de926d1e"
+    },
+    {
+      "path": "toolkits/editor/workflow/cli.py",
+      "sha256": "597e09fbbc6fa3a14eda430cd8dacf9c6472d51cade06d09d8b0c7c0d582380b"
+    },
+    {
+      "path": "toolkits/editor/workflow/codex/__init__.py",
+      "sha256": "7fdc568ab6032336fa4af7ade67c0584867241b3c59f18ac62f47d05c54ea75a"
+    },
+    {
+      "path": "toolkits/editor/workflow/codex/relay.py",
+      "sha256": "ab1bb108f714ad96d796bbbbb9d91781d3df1a1b6eb1eed4f723832fcf75109f"
+    },
+    {
+      "path": "toolkits/editor/workflow/creation/__init__.py",
+      "sha256": "00a5ba4ca5fb9b33d36aa0706db00828b3ba2fc1ec4ea4283582a289c2d45584"
+    },
+    {
+      "path": "toolkits/editor/workflow/creation/batch.py",
+      "sha256": "1e5c5a28dbcd144bbea052fcf07230103dc62f9da767c21e2c9e18ea6390a4f4"
+    },
+    {
+      "path": "toolkits/editor/workflow/creation/core.py",
+      "sha256": "532e0077e76602b534b59a085d78b756c88f67507b34bbaddae28b4c4a6ee552"
+    },
+    {
+      "path": "toolkits/editor/workflow/desktop_delivery.py",
+      "sha256": "993d58193b224285391537f838835096e6e7e7fc0e6d4ceae3585022585ec97f"
+    },
+    {
+      "path": "toolkits/editor/workflow/markets.py",
+      "sha256": "316da19ca61620d2ac5031d1f4da06888ea6930c74fef423fdb9b9527d24c967"
+    },
+    {
+      "path": "toolkits/editor/workflow/mcp_server.py",
+      "sha256": "ca6b959a52f6138343112724327fd7e79e08c70ab9ee8684f6824697aa4743f4"
+    },
+    {
+      "path": "toolkits/editor/workflow/media.py",
+      "sha256": "38fa3c8abfd9995dbd992abd86e39b6db2ad6fdf83b39f734c21f3cc8919af30"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/__init__.py",
+      "sha256": "be2847283cbded5a077b12ea94aa832e93217a72517eea504939626f551919f9"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/delivery.py",
+      "sha256": "e4655654c0a9008639fec7f8d95f254af634dfc021227310151b6b6c783019e1"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/local.py",
+      "sha256": "9c027ec9c4143606cdd39c60a735770fc6432ae0825b9d9a60c46774831e5e43"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/pipeline.py",
+      "sha256": "cccaece6bcef620b9190f5dc871a99be2181517ea324664d2ad2973eda2fcefc"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/process.py",
+      "sha256": "cfb388b201378fa6cc9207ba7d406d7db320612ed3cf2ab10f6539060e10190f"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/repair.py",
+      "sha256": "a2e8787d6e0aee6a42bd88129ded4ffbb554fe6aaa2ed903aef7b64e143a79b6"
+    },
+    {
+      "path": "toolkits/editor/workflow/orchestration/reuse.py",
+      "sha256": "7b8fedae9fe08b6480ac5e442c20480438cc2ca1f90a5704759bdaffcffe608e"
+    },
+    {
+      "path": "toolkits/editor/workflow/packaging_storyboard.py",
+      "sha256": "ef8484e04dbae0ddad49ce60447d7a390a012636e6d2a2431e4589b268abc055"
+    },
+    {
+      "path": "toolkits/editor/workflow/packaging_templates.py",
+      "sha256": "4400e3142f6c108ee3b216b878cee35e963c41f7036f8db1cb720d13195b17d3"
+    },
+    {
+      "path": "toolkits/editor/workflow/platforms/__init__.py",
+      "sha256": "b3643c56c369cc75d936ab669b726ce719eb7bc35f3e5db268fbae0b3865cd48"
+    },
+    {
+      "path": "toolkits/editor/workflow/platforms/files.py",
+      "sha256": "4e4220873e1ec74f1d7b626a6e894008fa3128dc87312cb68854aa165778a8d9"
+    },
+    {
+      "path": "toolkits/editor/workflow/platforms/locks.py",
+      "sha256": "0c684c74b6d0677305b5d5b0650a90404773496a0cf6198a24073b722a20f461"
+    },
+    {
+      "path": "toolkits/editor/workflow/platforms/runtime.py",
+      "sha256": "0038d9d23085bc63d2d619fe65411117f29536cf998f349b633a27d81594b165"
+    },
+    {
+      "path": "toolkits/editor/workflow/platforms/windows_job.py",
+      "sha256": "ef28464afda2fb84fe6e19858ed4cca8809ee83876a95143232260df1e4246b6"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/__init__.py",
+      "sha256": "2636eb3f443e51b3fd25086e457bc2145b69428587418f8bcbbcc3b8188f62a7"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/chatcut.py",
+      "sha256": "368182c25a357ced9fd96f2c1861e1d3ddbccef6be68981cf243d2cb48b65659"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/continuity.py",
+      "sha256": "1473e6c1a458442095f91b83ff17743a72c57b5089218c3a831d05f0366b092d"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/library.py",
+      "sha256": "8387555774c109e142c73eb988dbabd0b969c7415bae72aa119deb4039cdac9d"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/narration.py",
+      "sha256": "bef5b927d11737a2787111b715eaa3d8bbb0c8b798899e407e962668f5b2aa20"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/preparation.py",
+      "sha256": "bb46751253a135714edb6351dc3f7c98822f77859144b87e64d770788064935f"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/qa.py",
+      "sha256": "bcecf17cd2a5dba06ab8b1b3079f5195ab808ef3877edfea3d08f9f7f83c55fb"
+    },
+    {
+      "path": "toolkits/editor/workflow/production/voices.py",
+      "sha256": "349377609c8e202cff37b23ad5464a864e837cf3e2bad95b0dd89f5fab017a2f"
+    },
+    {
+      "path": "toolkits/editor/workflow/publishing/__init__.py",
+      "sha256": "7838efdf64cffa8ef301827b122dd3ab5d3e447c49f14fc1095a73a86af07292"
+    },
+    {
+      "path": "toolkits/editor/workflow/publishing/copy.py",
+      "sha256": "e735305587bbd2b412282dca72ad884ad98ca2a4000968901c881c78b7972cc8"
+    },
+    {
+      "path": "toolkits/editor/workflow/publishing/prepare.py",
+      "sha256": "e1eedea55d5710fbf1bf36f819af2893e83df6bc75b610c65715ceccfed44196"
+    },
+    {
+      "path": "toolkits/editor/workflow/references.py",
+      "sha256": "3621e3790610b7a0e93c8da578a4927dfd3d3421eaf24ddc58363cff8d7720a2"
+    },
+    {
+      "path": "toolkits/editor/workflow/remotion_bridge.py",
+      "sha256": "69eb5ee8b2f3d09d394d80c188f111b147f996a6f7e46671cbc5ff36f5c81e47"
+    },
+    {
+      "path": "toolkits/editor/workflow/repair/__init__.py",
+      "sha256": "bdfbd50e8d4bf5a48b3f30f967effe247052964df52a0e9db7b216026408d10b"
+    },
+    {
+      "path": "toolkits/editor/workflow/repair/intervals.py",
+      "sha256": "9b0061105a69f0d21d5199225658739e7c5436a214b9c5ffe0e8ae7801cccf34"
+    },
+    {
+      "path": "toolkits/editor/workflow/repair/pipeline.py",
+      "sha256": "13521cb5b240de1005073774450ee744b4338ee108ad5fb8c41f298c18ef3068"
+    },
+    {
+      "path": "toolkits/editor/workflow/repair/requirements.txt",
+      "sha256": "807fdff24a4d88b5c6c58de127d8f0d6d3087b899884b84206085bc5d24df273"
+    },
+    {
+      "path": "toolkits/editor/workflow/store.py",
+      "sha256": "4de63a5950a5201a045ab30b02eec434751684742bfebd1c7368994b75585af0"
+    },
+    {
+      "path": "toolkits/collector/workflow/collection/collector.py",
+      "sha256": "68cf245769b1a753e2794491dde85f692d82391b3a7472c45864f9ffdf256689"
+    },
+    {
+      "path": "toolkits/collector/workflow/unattended/evil_discovery.py",
+      "sha256": "e0d1470d7f0b40117ee80ca8fccd935da22b37c6cbe87066b3b4475d5c55dd11"
+    },
+    {
+      "path": "toolkits/collector/requirements-collect.txt",
+      "sha256": "9058fcb0bd8c8d641c7d88327a9ea1e4cf9c0d79dfb4c16148cb6de999651e5d"
+    }
+  ]
+}

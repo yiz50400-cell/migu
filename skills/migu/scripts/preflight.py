@@ -34,7 +34,8 @@ def assess(config_path, skills_dir, route, which=shutil.which):
             raise ValueError(key + ' must be an absolute directory path or null')
         return p
     if route in ('generate', 'full'):
-        add('hypit CLI', which('hypit'))
+        executable = folder('hypit_path')
+        add('hypit CLI', (executable.is_file() and os.access(executable, os.X_OK)) if executable else which('hypit'))
         add('hypit skill', (skills_dir/'hypit/SKILL.md').is_file())
     if route in ('discover', 'full'):
         p = folder('collection_root')

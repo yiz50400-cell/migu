@@ -208,6 +208,17 @@ class PreflightTests(unittest.TestCase):
         self.touch(self.skills, 'hypit/SKILL.md')
         self.assertEqual(self.assess('generate', which=lambda _: 'synthetic-launcher')['status'], 'PASS_LOCAL_ONLY')
 
+    def test_configured_hypit_launcher(self):
+        self.touch(self.skills, 'hypit/SKILL.md')
+        executable=self.root/'hypit'
+        executable.write_text('synthetic executable')
+        executable.chmod(0o700)
+        config={'schema_version':1,'hypit_path':str(executable)}
+        result=self.assess('generate',config,which=lambda n:'ffmpeg' if n=='ffmpeg' else None)
+        self.assertEqual(result['status'],'PASS_LOCAL_ONLY')
+        executable.unlink()
+        self.assertIn('hypit CLI',self.assess('generate',which=lambda n:'ffmpeg' if n=='ffmpeg' else None)['missing'])
+
     def test_bad_config(self):
         for value in [[], {'schema_version': 2}]:
             with self.subTest(value=value), self.assertRaises(ValueError):

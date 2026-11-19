@@ -1,0 +1,10 @@
+{
+  "repository": "motiontemplates/385712",
+  "version": "0.2.7-open-beta",
+  "source_url": "https://raw.githubusercontent.com/motiontemplates/385712/HEAD/template/core/basic.js",
+  "source_sha256": "74df05aea6a3f5e235b13187390730730a699076bb79cf8f3f5e83f5ca90ba33",
+  "revision_kind": "content-addressed snapshot; HEAD resolved by hash, not a pinned git commit",
+  "retrieved_on": "2026-11-14",
+  "license": "MIT",
+  "adaptation": "B2 numbered glass panels, B4 gradient emphasis line; DOM to React/Remotion; portrait 1080x1920 30fps; no upstream media, fonts, music or SFX; not a .motion importer"
+}

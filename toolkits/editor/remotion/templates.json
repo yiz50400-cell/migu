@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "templates": [
+    {
+      "id": "classic",
+      "version": "1.0.0",
+      "name": "简洁商品",
+      "fit": "实拍为主，清晰标题、卖点与字幕",
+      "required_shots": [
+        "商品全貌",
+        "与文案相符的使用或细节镜头"
+      ],
+      "preview": "remotion/previews/classic.png",
+      "source": "project-original",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    {
+      "id": "kinetic-product",
+      "version": "1.0.0",
+      "name": "科技卖点",
+      "fit": "数码、工具、家居产品；编号卖点卡与渐变强调线",
+      "required_shots": [
+        "干净的商品主体",
+        "逐项卖点的可见演示"
+      ],
+      "preview": "remotion/previews/kinetic-product.png",
+      "source": "motiontemplates/385712 B2/B4 adapted; MIT",
+      "provenance": "remotion/third-party/motiongit-385712/provenance.json",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    {
+      "id": "comparison-review",
+      "version": "1.0.0",
+      "name": "对比测评",
+      "fit": "顺序A/B对比；左右状态卡跟随各段镜头，不复制或伪造对比画面",
+      "required_shots": [
+        "可核实的A侧演示",
+        "同条件B侧演示"
+      ],
+      "preview": "remotion/previews/comparison-review.png",
+      "source": "project-original",
+      "usage_note": "卖点卡按奇偶交替A/B；建议成对填写。并排视频须在ChatCut先完成。",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    {
+      "id": "step-guide",
+      "version": "1.0.0",
+      "name": "步骤演示",
+      "fit": "操作教程、安装与使用；步骤编号和分段进度条",
+      "required_shots": [
+        "每一步完整操作",
+        "操作结果"
+      ],
+      "preview": "remotion/previews/step-guide.png",
+      "source": "project-original",
+      "usage_note": "每张卖点卡代表一步，编号按卡片顺序，不把字幕cue当作步骤。",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    {
+      "id": "unboxing-reveal",
+      "version": "1.0.0",
+      "name": "开箱展示",
+      "fit": "开封、取物、细节；展开边角与吊牌卡",
+      "required_shots": [
+        "真实开封过程",
+        "取出商品与细节"
+      ],
+      "preview": "remotion/previews/unboxing-reveal.png",
+      "source": "project-original",
+      "usage_note": "边框只作视觉包装，不能补出缺失的开箱动作。",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    {
+      "id": "minimal-luxe",
+      "version": "1.0.0",
+      "name": "极简高级感",
+      "fit": "香氛、美妆、设计家居；浅色留白与细线淡入",
+      "required_shots": [
+        "主体清晰的干净近景",
+        "材质或使用细节"
+      ],
+      "preview": "remotion/previews/minimal-luxe.png",
+      "source": "project-original",
+      "usage_note": "适合简短文案；上下浅色遮罩保留中央展示区，需检查主体位置。",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    }
+  ]
+}

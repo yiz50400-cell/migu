@@ -27,7 +27,7 @@
 - 用户本轮已明确“用现有配置”、或恢复同一制作且记录已有选择，无需重问。改账号/收费端点/模型造成费用或能力变化时再确认相应变化。
 - 客户拒绝配置则完成无需生成的准备，标为等待配置，不交付假成片。
 
-先读取安装的 `hypit/SKILL.md`。配置相关按需读其 `references/environment/profile.md`、`model-and-provider.md`、`distribution.md`；不在这里复制会过时的配置 schema。
+先读取安装的 `hypit/SKILL.md`。若 installation.json 配置了 `hypit_path`，以下 `hypit` 命令均使用该实际启动器（作为独立参数传给进程，不拼接 shell）；没有则从 PATH 查找。配置相关按需读其 `references/environment/profile.md`、`model-and-provider.md`、`distribution.md`；不在这里复制会过时的配置 schema。
 
 只读核对安装与配置可用 `hypit version`、`hypit paths` 和 `hypit auth status <endpoint-instance>`；具体参数以本机帮助为准。凭据“存在”不等于服务可用。必要时做有界的 `doctor` 诊断，不为了探测随手提交生成任务。用户同意配置后，在本机认证流程输入凭据；不把凭据写入 Brief、代码、聊天回显或交付清单。
 

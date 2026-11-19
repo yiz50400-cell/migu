@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "job_id": "job_ACTUAL",
+  "ordinal": 1,
+  "sources": [{"asset_id": "ACTUAL_JOB_ASSET_ID", "sha256": "REPLACE_WITH_ACTUAL_SHA256"}],
+  "template_id": "kinetic-product",
+  "audio_mode": "silent",
+  "title": "填写已核实的标题",
+  "cta": "填写目标市场语言的CTA",
+  "accent_color": "#FFD54A",
+  "delivery_explanation_zh": "真实镜头与文案逐项对应。",
+  "delivery_text_zh": "填写中文交付文案。",
+  "shots": [
+    {
+      "asset_id": "ACTUAL_JOB_ASSET_ID",
+      "source_start": 0, "source_end": 3,
+      "start": 0, "end": 3,
+      "purpose": "商品全貌开场",
+      "visual": "填写这段原片实际看到的商品和动作",
+      "message": "填写由画面支持的商品介绍"
+    },
+    {
+      "asset_id": "ACTUAL_JOB_ASSET_ID",
+      "source_start": 4, "source_end": 8,
+      "start": 3, "end": 7,
+      "purpose": "演示具体卖点",
+      "visual": "填写实际动作及可见结果",
+      "message": "填写已经核实的卖点",
+      "card": "填写目标市场语言的短卖点"
+    }
+  ]
+}

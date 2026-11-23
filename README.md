@@ -4,6 +4,15 @@
 
 Windows 客户首次下载或从 DTK 初始化页面续装，见 [Windows 原地修复](docs/WINDOWS-REPAIR.md)。
 
+## 公开下载
+
+```sh
+git clone https://github.com/yiz50400-cell/migu.git
+cd migu
+```
+
+只读下载无需 GitHub 账号或 SSH 部署密钥。客户可在本机修改并测试；向主仓库推送仍需写权限。已有安装保留原目录和配置，按 [原地修复说明](docs/WINDOWS-REPAIR.md) 更新。
+
 ## 下载后怎么用
 
 在 Codex 中打开**整个仓库**，说：

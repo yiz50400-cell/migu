@@ -1,12 +1,13 @@
 """Evil0ctal (Douyin_TikTok_Download_API) URL discovery for unattended collect.
 
 When the local Docker+Evil stack is healthy, default discovery searches TikTok
-**page URLs** via guest+browser REST (`/api/v1/tiktok/search/posts`) and feeds
+**page URLs** via the configured identity pool REST (`/api/v1/tiktok/search/posts`) and feeds
 them into the existing yt-dlp download + vision screen path.
 
 Probe fail / missing API key → clean degrade: caller falls back to Codex
-web_search → yt-dlp. Evil never downloads media, never needs customer TikTok
-cookies, and never requires a residential proxy.
+web_search → yt-dlp. Evil discovers URLs; yt-dlp downloads media. TikTok search
+login requirements depend on the running DTK version. A browser login is not
+automatically imported into its identity pool; verify session and egress locally.
 """
 
 from __future__ import annotations

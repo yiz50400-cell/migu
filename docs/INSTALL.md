@@ -67,3 +67,7 @@ npx --yes --prefer-online @chatcut/cli@latest connect --allow-install --json
 客户截图若停在 DTK 创建管理员页面，按 [Windows 原地修复](WINDOWS-REPAIR.md) 继续。脚本优先验证已有采集凭据，仅在空实例上创建本机管理账号和单独的 tiktok:read 采集凭据。图片和视频分别复用客户已选接入；图片沿用其已配置的 Key、URL 和模型。
 
 完成安装后执行 preflight.py，并继续核实：Hypit version/配置状态、采集模块可导入、Evil readyz+browser-rpc+凭据、ChatCut list_projects、Remotion 模板加载。尚未填账号或缺点击就标记 ACTION_REQUIRED，不能宣称完整生产可用。真实生成/成片验收按用户任务和费用范围另行执行。
+
+## 搜索登录条件与验收
+
+安装器依据运行中 DTK 的接口策略检查 TikTok 登录候选，并用 `coffee` 运行一次真实搜索。服务健康但缺少所需登录身份时仍是 ACTION_REQUIRED；不会反复创建游客来替代登录。客户既有 Chrome 登录不会自动成为 DTK 身份。按 [原地修复](WINDOWS-REPAIR.md) 处理唯一阻塞，随后验证视频下载/解码。该规则适用于所有系统，不以发布者的旧实例代替新客户验收。

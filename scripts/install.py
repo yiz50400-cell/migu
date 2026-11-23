@@ -289,7 +289,7 @@ class Installer:
         spec=importlib.util.spec_from_file_location('migu_evil_repair',self.root/'scripts/repair_evil.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         try:
-            report=module.locked_repair(base=base,docker=self.which('docker'),env=self.env,apply=True)
+            report=module.locked_repair(base=base,docker=self.which('docker'),env=self.env,apply=True,verify_keyword='coffee')
         except module.RepairError as error:
             self.pending(str(error)+' Follow docs/WINDOWS-REPAIR.md; do not send the customer to the setup wizard by default.')
             return

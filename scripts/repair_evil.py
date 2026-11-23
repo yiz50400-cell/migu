@@ -8,6 +8,7 @@ Protocol source: Evil commit 3c045e11aecd58ab076562f1246931b9dd5d909b.
 import argparse
 import http.cookiejar
 import json
+import re
 import os
 from pathlib import Path
 import secrets
@@ -42,7 +43,7 @@ class Client:
             urllib.request.ProxyHandler({}), NoRedirect(),
             urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
-    def request(self, path, data=None, key=None):
+    def request(self, path, data=None, key=None, *, envelope=False, timeout=30):
         headers = {'Accept': 'application/json'}
         if key:
             headers['X-API-Key'] = key
@@ -52,15 +53,23 @@ class Client:
             body = json.dumps(data).encode('utf-8')
         request = urllib.request.Request(self.base+path, data=body, headers=headers)
         try:
-            with (self.key_opener if key else self.opener).open(request, timeout=30) as response:
+            with (self.key_opener if key else self.opener).open(request, timeout=timeout) as response:
                 payload = json.load(response)
         except urllib.error.HTTPError as error:
-            raise RepairError(f'Evil {path}: HTTP {error.code}; response body withheld.') from None
+            code = ''
+            try:
+                detail = json.loads(error.read(65536)).get('error', {})
+                candidate = detail.get('code', '') if isinstance(detail, dict) else ''
+                if isinstance(candidate, str) and re.fullmatch(r'[A-Z][A-Z0-9_]{1,63}', candidate):
+                    code = ' / '+candidate
+            except (OSError, ValueError, AttributeError):
+                pass
+            raise RepairError(f'Evil {path}: HTTP {error.code}{code}; response body withheld.') from None
         except (OSError, ValueError) as error:
             raise RepairError(f'Evil {path}: {type(error).__name__}; no secrets logged.') from None
         if not isinstance(payload, dict) or payload.get('success') is False:
             raise RepairError(f'Evil {path}: unexpected response; body withheld.')
-        return payload.get('data', payload)
+        return payload if envelope else payload.get('data', payload)
 
 
 def quiet_run(args, *, input=None, timeout=60, env=None):
@@ -181,11 +190,18 @@ POOL_PROBE = '''import json
 from dtk.cli import runtime
 from dtk.db.repositories import IdentityRepository
 from dtk.core.types import Platform, IdentityState
+from dtk.platforms.tiktok.endpoints import ENDPOINTS, SEARCH_POSTS
 async def inspect(ctx):
     rows = await IdentityRepository(ctx.session).list_by_state(
-        platform=Platform.TIKTOK, states=tuple(IdentityState), limit=500)
-    return {'active': sum(r.state in ('active','degraded') for r in rows),
-            'live': sum(r.state != 'retired' for r in rows)}
+        platform=Platform.TIKTOK, states=tuple(IdentityState))
+    live = [r for r in rows if r.state != 'retired']
+    ready = [r for r in live if r.state in ('active', 'degraded')]
+    return {'active': len(ready), 'live': len(live),
+            'authenticated': sum(r.authenticated for r in live),
+            'search_login_candidates': sum(r.authenticated and
+                (r.rotation_endpoints is None or SEARCH_POSTS in r.rotation_endpoints)
+                for r in ready),
+            'search_login_policy': ENDPOINTS[SEARCH_POSTS].login.value}
 print(json.dumps(runtime.with_context(inspect)))
 '''
 BROWSER_PROBE = '''import json, os, urllib.request
@@ -196,7 +212,27 @@ with urllib.request.urlopen(base+'/rpc/health', timeout=10) as response:
 '''
 
 
-def repair(*, base='http://127.0.0.1:8000', docker=None, env=None, apply=False):
+def verify_search(client, key, keyword):
+    # Use the shipped collector's real parsing/polling; never return raw service bodies.
+    import importlib.util
+    source = Path(__file__).resolve().parents[1]/'toolkits/collector/workflow/unattended/evil_discovery.py'
+    spec = importlib.util.spec_from_file_location('migu_search_check', source)
+    discovery = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(discovery)
+
+    def get(url, *, api_key, timeout):
+        prefix = client.base+'/'
+        if not url.startswith(prefix):
+            raise RepairError('Search check refused a different API origin.')
+        return client.request('/'+url[len(prefix):], key=api_key,
+                              envelope=True, timeout=min(timeout, 40))
+
+    return discovery.search_keyword_urls(keyword, base=client.base, api_key=key,
+                                         count=5, wait=10, timeout=45, getter=get)
+
+
+def repair(*, base='http://127.0.0.1:8000', docker=None, env=None, apply=False,
+           verify_keyword=None):
     env = os.environ if env is None else env
     client = Client(base)
     client.request('/readyz')
@@ -221,7 +257,7 @@ def repair(*, base='http://127.0.0.1:8000', docker=None, env=None, apply=False):
                        create_admin=(lambda name, password: command(
                            'dtk', 'user', 'create', name, '--stdin', input=password+'\n')) if container else None)
     result.update(api_base=base, api_key_file=str(key_path) if key_path.is_file() else None,
-                  status='AUTHENTICATED', pending=[])
+                  status='AUTHENTICATED', pending=[], search_verified=False)
     if not container:
         result['pending'].append('API key verified; local browser/identity pool not inspected (container not identified).')
         return result
@@ -229,15 +265,43 @@ def repair(*, base='http://127.0.0.1:8000', docker=None, env=None, apply=False):
     if browser.get('status') != 'ok':
         raise RepairError('Browser RPC not healthy; credentials preserved. Inspect browser service.')
     pool = json.loads(command('python', '-c', POOL_PROBE))
-    if not pool['live'] and apply:
+    if not pool['live'] and apply and pool['search_login_policy'] != 'required':
         command('dtk', 'identity', 'mint', '--platform', 'tiktok', '--count', '1', timeout=240)
         pool = json.loads(command('python', '-c', POOL_PROBE))
+    result.update(browser='healthy', active_identities=pool['active'],
+                  login_identities=pool['authenticated'],
+                  search_login_candidates=pool['search_login_candidates'],
+                  search_login_policy=pool['search_login_policy'])
+    if pool['search_login_policy'] == 'required' and not pool['search_login_candidates']:
+        result['status'] = 'TIKTOK_LOGIN_UNAVAILABLE' if pool['authenticated'] else 'TIKTOK_LOGIN_REQUIRED'
+        result['pending'].append(
+            'Running DTK requires TikTok login for the first search page. '
+            + ('Existing login identities are cooling or excluded from search rotation; inspect them without resetting. '
+               if pool['authenticated'] else
+               'Import the customer-authorized TikTok session using its matching browser fingerprint and egress. ')
+            + 'DTK administrator login and minted guests do not supply this session. See docs/WINDOWS-REPAIR.md.')
+        return result
     if not pool['active']:
+        result['status'] = 'IDENTITY_UNAVAILABLE'
         result['pending'].append('No active/degraded TikTok identity. Preserve the pool and diagnose network/browser; no repeated minting.')
-    result.update(browser='healthy', active_identities=pool['active'])
-    if not result['pending']:
-        result['status'] = 'LOCAL_SERVICE_READY'
-    result['search_verified'] = False
+        return result
+    result['status'] = 'SEARCH_UNVERIFIED'
+    if not verify_keyword:
+        result['pending'].append('Real search not tested. Run scripts/repair_evil.py --verify-search with a representative keyword.')
+        return result
+    key = existing_key or key_path.read_text(encoding='utf-8-sig').strip()
+    try:
+        videos = verify_search(client, key, verify_keyword)
+    except (RepairError, OSError, RuntimeError, ValueError) as error:
+        result['status'] = 'SEARCH_FAILED'
+        result['pending'].append(str(error) if isinstance(error, RepairError)
+                                 else 'Real search failed: '+type(error).__name__+'; response withheld.')
+        return result
+    result.update(video_count=len(videos), search_keyword=verify_keyword,
+                  search_verified=bool(videos),
+                  status='SEARCH_VERIFIED' if videos else 'SEARCH_EMPTY')
+    if not videos:
+        result['pending'].append('Real search returned no video URLs; acquisition is not accepted yet.')
     return result
 
 
@@ -267,9 +331,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--base', default=os.environ.get('VW_EVIL_API_BASE', 'http://127.0.0.1:8000'))
+    parser.add_argument('--verify-search', metavar='KEYWORD', help='Run one real search; output counts only, no cookies.')
     args = parser.parse_args()
     try:
-        result = locked_repair(base=args.base, apply=args.apply)
+        result = locked_repair(base=args.base, apply=args.apply, verify_keyword=args.verify_search)
     except (RepairError, OSError, ValueError) as error:
         message = str(error) if isinstance(error, RepairError) else type(error).__name__
         print(json.dumps({'status': 'ACTION_REQUIRED', 'reason': message}, ensure_ascii=True))

@@ -13,3 +13,7 @@ installation.json 的 distribution_root 定位完整仓库；缺少时从当前�
 Windows 中断在 DTK 初始化页，使用 distribution_root 中的 docs/WINDOWS-REPAIR.md 和 scripts/repair_evil.py，优先复用当前实例。
 
 图片和视频接入分别按 hypit-execution.md 分别确认，安装不触发付费生成。官方软件从原发布源安装，不复制作者账号或 Runtime。客户只提供参考时不启动 Evil 搜索。
+
+## 采集登录条件
+
+部署依据运行中 DTK 的接口策略检查 TikTok 搜索登录要求；不能把健康服务、可用游客或管理员登录成功报为搜索可用。运行仓库 `scripts/repair_evil.py --verify-search coffee` 后，按 `docs/WINDOWS-REPAIR.md` 接续；再下载并解码一条视频才完成采集链验收。已有 Chrome 登录不会自动导入 DTK。客户授权范围内复用其本机登录导入，浏览器内部页面的必要人工操作一次交代清楚，不绕过工具明确拒绝的页面权限。公开下载使用 HTTPS，无需申请 SSH 部署公钥。

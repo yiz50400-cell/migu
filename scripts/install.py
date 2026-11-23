@@ -64,6 +64,11 @@ def runtime_python(root):
     return root/('.venv/Scripts/python.exe' if os.name=='nt' else '.venv/bin/python')
 
 
+def supported_node(version):
+    parts=tuple(map(int,version.strip().split('.')[:3]))
+    return (parts[0]==22 and parts>=(22,15,0)) or parts[0]>=24
+
+
 def plan(route):
     return {
         'route': route, 'mode': 'PLAN_ONLY',
@@ -83,6 +88,7 @@ class Installer:
         self.lock=read_config(self.root/'dependencies.json')
         self.report={'status':'INSTALLING','route':route,'completed':[], 'pending':[], 'errors':[]}
         self.env=os.environ.copy()
+        self.env.update(PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
         self.config=read_config(self.skills_dir/'migu/installation.json')
         self.config.setdefault('schema_version',1)
         self.config['distribution_root']=str(self.root)
@@ -97,7 +103,7 @@ class Installer:
         # Commands contain program paths only, never credentials. No shell interpolation.
         print('Running: '+' '.join(str(x) for x in args[:5]),flush=True)
         result=subprocess.run([str(x) for x in args],cwd=cwd,env=self.env,
-                              text=True,capture_output=capture,timeout=1800)
+                              text=True,encoding='utf-8',errors='replace',capture_output=capture,timeout=1800)
         if result.returncode: raise RuntimeError('Command failed with exit '+str(result.returncode)+': '+str(args[0]))
         return result.stdout.strip() if capture else ''
     def stage(self, name, fn):
@@ -108,6 +114,25 @@ class Installer:
         self.save()
     def which(self, name): return shutil.which(name,path=self.env.get('PATH'))
     def prepend(self, folder): self.env['PATH']=str(folder)+os.pathsep+self.env.get('PATH','')
+
+    def refresh_path(self):
+        if platform.system()!='Windows': return
+        paths=[self.env.get('PATH','')]
+        try:
+            import winreg
+            for hive,key in ((winreg.HKEY_LOCAL_MACHINE,r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'),
+                             (winreg.HKEY_CURRENT_USER,r'Environment')):
+                try:
+                    with winreg.OpenKey(hive,key) as handle:
+                        value=winreg.QueryValueEx(handle,'Path')[0]
+                        paths.append(os.path.expandvars(value))
+                except OSError: pass
+        except ImportError: pass
+        program=Path(self.env.get('ProgramFiles','C:/Program Files'))
+        local=Path(self.env.get('LOCALAPPDATA',str(Path.home()/'AppData/Local')))
+        paths.extend(str(p) for p in (program/'Docker/Docker/resources/bin',program/'nodejs',
+                                     local/'Microsoft/WinGet/Links'))
+        self.env['PATH']=os.pathsep.join(paths)
 
     def skills(self):
         for name in ('migu','tiktok-product-video-editor'):
@@ -127,7 +152,7 @@ class Installer:
         node=self.which('node');npm=self.which('npm')
         if node and npm:
             version=self.run([node,'-p','process.versions.node'],capture=True)
-            if tuple(map(int,version.split('.')[:3])) >= (22,15,0): return
+            if supported_node(version): return
         # Existing package managers own system-level installations. Otherwise agent-guided setup.
         brew=self.which('brew');winget=self.which('winget')
         if brew:
@@ -135,10 +160,12 @@ class Installer:
             prefix=self.run([brew,'--prefix','node@22'],capture=True);self.prepend(Path(prefix)/'bin')
         elif winget:
             self.run([winget,'install','--id','OpenJS.NodeJS.LTS','--exact','--source','winget'])
-            self.prepend(Path(os.environ.get('ProgramFiles','C:/Program Files'))/'nodejs')
+            self.refresh_path()
         else:
             raise RuntimeError('Node.js >=22.15 is missing. Continue the Node setup section in docs/INSTALL.md; do not stop at telling the customer to install it.')
         if not self.which('node') or not self.which('npm'): raise RuntimeError('Node/npm installation needs PATH refresh')
+        if not supported_node(self.run([self.which('node'),'-p','process.versions.node'],capture=True)):
+            raise RuntimeError('Selected Node is incompatible; resolve PATH to Node 22.15+ (22.x) or >=24.')
 
     def media_tools(self):
         ffmpeg=self.config.get('ffmpeg_path')
@@ -149,7 +176,7 @@ class Installer:
                 self.run([self.which('brew'),'install','ffmpeg'])
             elif self.which('winget'):
                 self.run([self.which('winget'),'install','--id','Gyan.FFmpeg','--exact','--source','winget'])
-                self.prepend(Path(os.environ.get('LOCALAPPDATA',''))/'Microsoft/WinGet/Links')
+                self.refresh_path()
             else:
                 self.pending('FFmpeg/FFprobe system installation: follow docs/INSTALL.md media section automatically within deployment scope.')
         ffmpeg=ffmpeg or self.which('ffmpeg')
@@ -167,6 +194,8 @@ class Installer:
         target.parent.mkdir(parents=True,exist_ok=True)
         temp=Path(tempfile.mkdtemp(prefix=name+'-',dir=target.parent))
         self.run([git,'init',temp])
+        # Docker entrypoint shell scripts must retain LF on Windows checkouts.
+        self.run([git,'-C',temp,'config','core.autocrlf','false'])
         self.run([git,'-C',temp,'remote','add','origin',spec['repository']])
         self.run([git,'-C',temp,'fetch','--depth','1','origin',spec['commit']])
         self.run([git,'-C',temp,'checkout','--detach','FETCH_HEAD'])
@@ -175,7 +204,8 @@ class Installer:
         return target
 
     def hypit(self):
-        exe=self.which('hypit')
+        exe=self.config.get('hypit_path')
+        if not exe or not Path(exe).is_file(): exe=self.which('hypit')
         if exe:
             self.run([exe,'version'])
         else:
@@ -190,7 +220,7 @@ class Installer:
             source=self.checkout('hypit',self.lock['hypit_skill'])
             install_skill(source/self.lock['hypit_skill']['path'],self.skills_dir/'hypit',self.runtime/'backups')
             shutil.copy2(source/'LICENSE',self.skills_dir/'hypit/UPSTREAM-LICENSE')
-        self.pending('Confirm image/video Runtime selection and account credentials when production begins; installation does not authorize spending.')
+        self.pending('Verify existing video Runtime/account; images reuse the customer-selected Key/URL. Ask only for genuinely missing configuration; no generation during deployment.')
 
     def collector(self):
         if not self.uv: raise RuntimeError('uv setup incomplete')
@@ -208,7 +238,7 @@ class Installer:
             with urllib.request.urlopen(base+'/readyz',timeout=5) as response:
                 healthy=response.status==200
             if healthy:
-                self.pending('Existing Evil endpoint found; verify browser-rpc health and current customer API key before searching.')
+                self.repair_evil(base)
                 return
         except (OSError,ValueError):
             pass
@@ -218,6 +248,7 @@ class Installer:
                 self.run([self.which('brew'),'install','--cask','docker'])
             elif self.which('winget'):
                 self.run([self.which('winget'),'install','--id','Docker.DockerDesktop','--exact','--source','winget'])
+                self.refresh_path()
             else:
                 self.pending('Docker is missing: continue its official OS-specific install in docs/INSTALL.md, then rerun this installer.')
                 return
@@ -228,6 +259,9 @@ class Installer:
         probe=subprocess.run([docker,'info'],env=self.env,capture_output=True,timeout=20)
         if probe.returncode:
             self.pending('Docker engine is not running; open Docker Desktop and finish first-run prompts, then rerun.')
+            return
+        if self.run([docker,'info','--format','{{.OSType}}'],capture=True)!='linux':
+            self.pending('Evil requires Linux containers. Enable Docker Desktop Linux/WSL2 backend and finish any required host permission/restart, then resume.')
             return
         if base!='http://127.0.0.1:8000':
             self.pending('Configured Evil endpoint is unavailable; recover that endpoint without silently replacing it.')
@@ -247,7 +281,20 @@ class Installer:
                 f.write(''.join(k+'='+v+'\n' for k,v in values.items()))
         self.run([docker,'compose','--env-file',envfile,'-p','migu-evil','-f',target/'docker/compose.yml',
                   '--profile','browser','up','-d','--build','--wait','--wait-timeout','600'],cwd=target)
-        self.pending('Evil stack started: complete the local admin/guest/API-key setup, then verify readyz and browser-rpc; never copy the publisher key.')
+        self.repair_evil(base)
+
+    def repair_evil(self, base):
+        # Load by path so this works from tests, installed skills and any cwd.
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('migu_evil_repair',self.root/'scripts/repair_evil.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        try:
+            report=module.locked_repair(base=base,docker=self.which('docker'),env=self.env,apply=True)
+        except module.RepairError as error:
+            self.pending(str(error)+' Follow docs/WINDOWS-REPAIR.md; do not send the customer to the setup wizard by default.')
+            return
+        atomic_json(self.runtime/'evil-repair-report.json',report)
+        for message in report.get('pending',[]): self.pending(message)
 
     def editor(self):
         if not self.uv: raise RuntimeError('uv setup incomplete')

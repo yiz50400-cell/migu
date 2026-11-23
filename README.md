@@ -1,6 +1,8 @@
 # migu
 
-各种商品通用的 TikTok AI 复刻流程：按需找参考 → Hypit 实际生成图片/动态视频 → 素材验收 → ChatCut 剪辑与 Remotion 包装 → 成片复核。
+各种商品通用的 TikTok AI 复刻流程：按需找参考 → 使用已选图片接入生成参考图 → Hypit 生成动态视频 → 素材验收 → ChatCut 剪辑与 Remotion 包装 → 成片复核。
+
+Windows 客户首次下载或从 DTK 初始化页面续装，见 [Windows 原地修复](docs/WINDOWS-REPAIR.md)。
 
 ## 下载后怎么用
 

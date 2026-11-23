@@ -27,7 +27,7 @@ Windows 可用 `py -3 scripts/install.py --apply`。不带 --apply 只显示计�
 - Hypit CLI 缺少时把官方 @hypit/hypit 固定版本安装到 .runtime/hypit；缺官方 skill 时从官方仓库固定提交获取。保留现有可用安装。路径写入 hypit_path，执行时使用该路径。
 - 采集独立虚拟环境、yt-dlp/curl_cffi/imageio-ffmpeg。
 - 剪辑工具箱 uv sync --frozen 和 Remotion npm ci。
-- 发现路线准备 Evil：复用现有可达服务；否则通过已有包管理器安装 Docker、从官方固定提交取得 Evil，生成本机随机服务密钥并启动 browser profile。Docker 首次系统弹窗、管理员设置与 API key 仍由当前用户完成。
+- 发现路线准备 Evil：复用现有可达服务；否则通过已有包管理器安装 Docker、从官方固定提交取得 Evil，生成本机随机服务密钥并启动 browser profile。Docker 首次系统许可由本人处理。采集服务启动后自动运行本机修复入口，验证或初始化内部凭据。
 
 所有运行环境、上游下载、服务数据、密钥只留 .runtime/ 或工具箱本机环境目录，不提交 Git。Hypit 二进制和源码不打包转售；在客户机器从官方源安装并保留上游条款。Evil 和 Remotion 保留各自许可，内置 third-party 目录保留原许可证。
 
@@ -64,6 +64,6 @@ npx --yes --prefer-online @chatcut/cli@latest connect --allow-install --json
 
 安装写入 installation.json：distribution_root、collection_root、editor_toolkit_root、hypit_path、ffmpeg_path（存在时）。这些都是本机路径。旧路径仍可用就保留；失效时先定位现有环境再改，不删除原项目。
 
-按 migu 分别询问 Hypit 图片/视频是否沿用已有配置；缺少才引导配置，密钥不回显。Evil 首次设置管理员、guest 身份和 tiktok:read API key，保存在客户私密文件，再将文件路径交给 VW_EVIL_API_KEY_FILE。不要复制开发者的密钥或 Cookie。
+客户截图若停在 DTK 创建管理员页面，按 [Windows 原地修复](WINDOWS-REPAIR.md) 继续。脚本优先验证已有采集凭据，仅在空实例上创建本机管理账号和单独的 tiktok:read 采集凭据。图片和视频分别复用客户已选接入；图片沿用其已配置的 Key、URL 和模型。
 
 完成安装后执行 preflight.py，并继续核实：Hypit version/配置状态、采集模块可导入、Evil readyz+browser-rpc+凭据、ChatCut list_projects、Remotion 模板加载。尚未填账号或缺点击就标记 ACTION_REQUIRED，不能宣称完整生产可用。真实生成/成片验收按用户任务和费用范围另行执行。

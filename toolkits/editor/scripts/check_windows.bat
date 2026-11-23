@@ -11,5 +11,12 @@ if not exist "%WORKFLOW_PYTHON%" (
 )
 "%WORKFLOW_PYTHON%" -X utf8 scripts\check_windows_engine.py --require-windows
 if errorlevel 1 exit /b %errorlevel%
-"%WORKFLOW_PYTHON%" -X utf8 scripts\check.py --junitxml=.runtime/windows-engine-check/regression.xml
-exit /b %errorlevel%
+if not exist "..\..\tests\test_install.py" (
+  echo Migu release regression suite missing. Run this check inside the complete distribution.
+  exit /b 1
+)
+pushd "..\.."
+"%WORKFLOW_PYTHON%" -X utf8 -m unittest discover -s tests -v
+set "REGRESSION_EXIT=%errorlevel%"
+popd
+exit /b %REGRESSION_EXIT%

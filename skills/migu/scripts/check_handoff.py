@@ -8,6 +8,12 @@ from pathlib import Path
 import subprocess
 import sys
 
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+from acceptance import check_acceptance, check_duration_fields, check_shot_count
+
 
 class Invalid(ValueError):
     pass
@@ -75,9 +81,14 @@ def validate(manifest_path, ffprobe=None, ffmpeg='ffmpeg', inspector=None):
     data = json.loads(manifest_path.read_text(encoding='utf-8'))
     require(isinstance(data, dict), 'manifest must be an object')
     required = data.get('required_shots')
-    require(isinstance(required, list) and required, 'required_shots must be nonempty')
-    require(all(isinstance(x, str) and x.strip() for x in required), 'invalid required shot id')
-    require(len(set(required)) == len(required), 'duplicate required shot id')
+    allow_more = data.get('allow_more_than_usual_shots') is True
+    if allow_more:
+        reason = data.get('allow_more_than_usual_shots_reason')
+        require(isinstance(reason, str) and reason.strip(), 'allow_more_than_usual_shots needs a reason')
+    try:
+        check_shot_count(required, allow_more=allow_more)
+    except ValueError as exc:
+        raise Invalid(str(exc)) from exc
     assets = data.get('assets')
     require(isinstance(assets, list) and assets, 'no generated assets')
     durations = {}
@@ -108,12 +119,27 @@ def validate(manifest_path, ffprobe=None, ffmpeg='ffmpeg', inspector=None):
         sid, aid = shot.get('id'), shot.get('asset_id')
         require(isinstance(sid, str) and sid in required and sid not in covered, 'unknown/duplicate shot id')
         require(isinstance(aid, str) and aid in durations, f'unknown asset: {sid}')
-        start, end = number(shot.get('in')), number(shot.get('out'))
+        try:
+            durations_fields = check_duration_fields(shot, durations[aid])
+        except ValueError as exc:
+            raise Invalid(f'{sid}: {exc}') from exc
+        start, end = durations_fields['usable_in'], durations_fields['usable_out']
         require(0 <= start < end <= durations[aid] + 0.05, f'unusable time range: {sid}')
         covered.add(sid)
     require(covered == set(required), 'missing required shots: ' + ', '.join(sorted(set(required)-covered)))
+    delivery = data.get('delivery')
+    if delivery is not None:
+        require(isinstance(delivery, dict), 'delivery must be an object')
+        verified_file(delivery, root)
+        delivery_duration = number(delivery.get('duration'))
+        require(delivery_duration > 0, 'delivery duration must be a positive 成片时长')
+        try:
+            check_acceptance(delivery.get('acceptance'))
+        except ValueError as exc:
+            raise Invalid(str(exc)) from exc
     return {'status': 'TECHNICAL_EVIDENCE_VALID', 'assets': len(assets), 'covered_shots': len(covered),
-            'limit': 'Does not independently authenticate generation receipts or verify visual review claims.'}
+            'usual_shot_limit': 6, 'delivery_reviewed': delivery is not None,
+            'limit': 'Does not independently authenticate generation receipts or verify visual review claims. Generation success is not completion.'}
 
 
 def main():

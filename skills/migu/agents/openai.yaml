@@ -1,6 +1,6 @@
 interface:
   display_name: "migu"
-  short_description: "采集 TikTok 参考、Hypit 动态复刻、检查素材并衔接剪辑交付"
-  default_prompt: "使用 $migu 完成商品视频复刻：先分别核对图片与视频模型并确认是否沿用 Hypit 配置，按需采集参考，先逐镜对照原片并检查允许差异，再生成真实 AI 动态素材，检查后衔接剪辑并交付成片。"
+  short_description: "采集 TikTok 参考、按结构节奏和重点分镜复刻、检查素材并验收交付"
+  default_prompt: "使用 $migu 完成商品视频复刻：图片固定使用已配置接口的 image2.5flare，视频可走多个渠道或账号；按需采集参考，保留结构、节奏和重点，通常最多 6 个真实分镜，分别记录请求时长、可用区间和成片时长；生成后检查实际切镜、穿帮、对应国家语言、视频包装、字幕和最终导出。生成成功不能算完成。"
 policy:
   allow_implicit_invocation: true

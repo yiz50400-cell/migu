@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +99,141 @@ class LedgerTests(unittest.TestCase):
         ledger.confirm_success(self.conn, 'k1')
         with self.assertRaises(ledger.DuplicateSubmission):
             ledger.assert_can_submit(self.conn, 'k1', ledger.request_hash(payload))
+
+    def test_assert_can_submit_requires_reservation(self):
+        digest = ledger.request_hash({'shot': 's1', 'seconds': 4})
+        with self.assertRaisesRegex(ledger.LedgerError, 'reserve budget before submitting'):
+            ledger.assert_can_submit(self.conn, 'k1', digest)
+        self.reserve()
+        row = ledger.assert_can_submit(self.conn, 'k1', digest)
+        self.assertEqual(row['status'], 'reserved')
+        ledger.mark_submitted(self.conn, 'k1', 'task-1')
+        with self.assertRaises(ledger.DuplicateSubmission):
+            ledger.assert_can_submit(self.conn, 'k1', digest)
+
+    def test_assert_can_submit_rejects_failed_or_released(self):
+        digest = ledger.request_hash({'shot': 's1', 'seconds': 4})
+        self.reserve()
+        ledger.confirm_failure(self.conn, 'k1')
+        with self.assertRaisesRegex(ledger.DuplicateSubmission, 'new idempotency key'):
+            ledger.assert_can_submit(self.conn, 'k1', digest)
+        self.reserve(key='k3')
+        ledger.release(self.conn, 'k3')
+        with self.assertRaisesRegex(ledger.DuplicateSubmission, 'new idempotency key'):
+            ledger.assert_can_submit(self.conn, 'k3', digest)
+
+    def test_release_unknown_is_rejected(self):
+        self.reserve()
+        ledger.mark_submitted(self.conn, 'k1', 'task-maybe')
+        ledger.mark_unknown(self.conn, 'k1')
+        reserved_before = ledger.budget_state(self.conn, 'acct')['reserved']
+        with self.assertRaises(ledger.UnknownAcceptance):
+            ledger.release(self.conn, 'k1')
+        row = ledger.get_submission(self.conn, 'k1')
+        self.assertEqual(row['status'], 'submission_unknown')
+        self.assertEqual(ledger.budget_state(self.conn, 'acct')['reserved'], reserved_before)
+        ledger.confirm_failure(self.conn, 'k1')
+        self.assertEqual(ledger.get_submission(self.conn, 'k1')['status'], 'failed')
+        self.assertEqual(ledger.budget_state(self.conn, 'acct')['reserved'], 0)
+
+    def test_confirm_success_rejects_overdraft(self):
+        self.reserve(amount=3)
+        before = ledger.budget_state(self.conn, 'acct')
+        with self.assertRaises(ledger.InsufficientBudget):
+            ledger.confirm_success(self.conn, 'k1', actual_amount=11)
+        state = ledger.budget_state(self.conn, 'acct')
+        self.assertEqual(state['reserved'], before['reserved'])
+        self.assertEqual(state['spent'], before['spent'])
+        self.assertEqual(ledger.get_submission(self.conn, 'k1')['status'], 'reserved')
+        # Actual may exceed the reservation if it still fits the authorized budget.
+        ledger.confirm_success(self.conn, 'k1', actual_amount=5)
+        state = ledger.budget_state(self.conn, 'acct')
+        self.assertEqual(state['reserved'], 0)
+        self.assertEqual(state['spent'], 5)
+        self.assertEqual(state['available'], 5)
+
+    def test_concurrent_reserve_same_key(self):
+        path = Path(self.tmp.name) / 'ledger.sqlite'
+        barrier = threading.Barrier(2)
+        results = [None, None]
+        errors = [None, None]
+        payload = {'shot': 's1', 'seconds': 4}
+        digest = ledger.request_hash(payload)
+
+        def worker(index, payload_override):
+            conn = ledger.open_ledger(path)
+            try:
+                barrier.wait(timeout=5)
+                results[index] = ledger.reserve(
+                    conn,
+                    idempotency_key='concurrent',
+                    account_id='acct',
+                    channel_id='api-main',
+                    request_hash=ledger.request_hash(payload_override),
+                    kind='video',
+                    amount=3,
+                    requested_duration=4,
+                )
+            except Exception as exc:
+                errors[index] = exc
+            finally:
+                conn.close()
+
+        threads = [
+            threading.Thread(target=worker, args=(0, payload)),
+            threading.Thread(target=worker, args=(1, payload)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=8)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [None, None], errors)
+        self.assertEqual(results[0]['status'], 'reserved')
+        self.assertEqual(results[1]['status'], 'reserved')
+        self.assertEqual(results[0]['created_at'], results[1]['created_at'])
+        self.assertEqual(results[0]['request_hash'], digest)
+        self.assertEqual(ledger.budget_state(self.conn, 'acct')['reserved'], 3)
+
+    def test_concurrent_reserve_different_request(self):
+        path = Path(self.tmp.name) / 'ledger.sqlite'
+        barrier = threading.Barrier(2)
+        results = [None, None]
+        errors = [None, None]
+        payloads = [{'shot': 's1'}, {'shot': 's2'}]
+
+        def worker(index):
+            conn = ledger.open_ledger(path)
+            try:
+                barrier.wait(timeout=5)
+                results[index] = ledger.reserve(
+                    conn,
+                    idempotency_key='concurrent-diff',
+                    account_id='acct',
+                    channel_id='api-main',
+                    request_hash=ledger.request_hash(payloads[index]),
+                    kind='video',
+                    amount=3,
+                    requested_duration=4,
+                )
+            except Exception as exc:
+                errors[index] = exc
+            finally:
+                conn.close()
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in (0, 1)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=8)
+            self.assertFalse(thread.is_alive())
+        outcomes = [errors[i] or results[i] for i in (0, 1)]
+        rows = [item for item in outcomes if isinstance(item, dict)]
+        clashes = [item for item in outcomes if isinstance(item, ledger.DuplicateSubmission)]
+        self.assertEqual(len(rows), 1, outcomes)
+        self.assertEqual(len(clashes), 1, outcomes)
+        self.assertEqual(rows[0]['status'], 'reserved')
+        self.assertEqual(ledger.budget_state(self.conn, 'acct')['reserved'], 3)
 
     def test_no_secrets_in_schema_or_rows(self):
         self.reserve()

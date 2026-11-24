@@ -13,7 +13,6 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-DO_NOT_RESUBMIT = ('reserved', 'submitted', 'succeeded', 'submission_unknown')
 ACTIVE_RESERVE = ('reserved', 'submitted', 'submission_unknown')
 
 
@@ -55,6 +54,7 @@ def open_ledger(path):
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=5000')
     conn.executescript(
         "CREATE TABLE IF NOT EXISTS budget ("
         " account_id TEXT PRIMARY KEY,"
@@ -118,6 +118,25 @@ def get_submission(conn, idempotency_key):
     return dict(row) if row else None
 
 
+def _existing_decision(existing, request_hash):
+    """Reuse or reject an existing row for the same idempotency key."""
+    if existing['request_hash'] != request_hash:
+        raise DuplicateSubmission('idempotency key reused with a different request')
+    if existing['status'] == 'submission_unknown':
+        raise UnknownAcceptance('prior submit is submission_unknown; recover before a new submit')
+    if existing['status'] in ('reserved', 'submitted', 'succeeded'):
+        return existing
+    raise DuplicateSubmission(
+        'key already closed as %s; use a new idempotency key to retry' % existing['status']
+    )
+
+
+def _begin_immediate(conn):
+    if conn.in_transaction:
+        conn.commit()
+    conn.execute('BEGIN IMMEDIATE')
+
+
 def reserve(conn, *, idempotency_key, account_id, channel_id, request_hash, kind, amount,
             requested_duration=None):
     if not idempotency_key or not isinstance(idempotency_key, str):
@@ -129,36 +148,46 @@ def reserve(conn, *, idempotency_key, account_id, channel_id, request_hash, kind
     if requested_duration is not None and (requested_duration < 0 or not _finite(requested_duration)):
         raise LedgerError('requested_duration must be a finite non-negative number')
 
-    existing = get_submission(conn, idempotency_key)
-    if existing:
-        if existing['request_hash'] != request_hash:
-            raise DuplicateSubmission('idempotency key reused with a different request')
-        if existing['status'] == 'submission_unknown':
-            raise UnknownAcceptance('prior submit is submission_unknown; recover before a new submit')
-        if existing['status'] in DO_NOT_RESUBMIT:
-            return existing
-        raise DuplicateSubmission('key already closed as %s; use a new idempotency key to retry' % existing['status'])
+    def decide_existing(existing):
+        return _existing_decision(existing, request_hash)
 
-    state = budget_state(conn, account_id)
-    if amount > state['available'] + 1e-9:
-        raise InsufficientBudget(
-            'insufficient budget: need %.4f, available %.4f' % (amount, state['available'])
+    _begin_immediate(conn)
+    try:
+        existing = get_submission(conn, idempotency_key)
+        if existing:
+            row = decide_existing(existing)
+            conn.commit()
+            return row
+
+        state = budget_state(conn, account_id)
+        if amount > state['available'] + 1e-9:
+            raise InsufficientBudget(
+                'insufficient budget: need %.4f, available %.4f' % (amount, state['available'])
+            )
+        now = _now()
+        conn.execute(
+            'INSERT INTO submissions('
+            'idempotency_key, account_id, channel_id, request_hash, kind, requested_duration,'
+            'reserved_amount, actual_amount, status, provider_task_id, created_at, updated_at)'
+            ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+            (idempotency_key, account_id, channel_id, request_hash, kind,
+             requested_duration, float(amount), None, 'reserved', None, now, now),
         )
-    now = _now()
-    conn.execute(
-        'INSERT INTO submissions('
-        'idempotency_key, account_id, channel_id, request_hash, kind, requested_duration,'
-        'reserved_amount, actual_amount, status, provider_task_id, created_at, updated_at)'
-        ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
-        (idempotency_key, account_id, channel_id, request_hash, kind,
-         requested_duration, float(amount), None, 'reserved', None, now, now),
-    )
-    conn.execute(
-        'UPDATE budget SET reserved=reserved+?, updated_at=? WHERE account_id=?',
-        (float(amount), now, account_id),
-    )
-    conn.commit()
-    return get_submission(conn, idempotency_key)
+        conn.execute(
+            'UPDATE budget SET reserved=reserved+?, updated_at=? WHERE account_id=?',
+            (float(amount), now, account_id),
+        )
+        conn.commit()
+        return get_submission(conn, idempotency_key)
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        existing = get_submission(conn, idempotency_key)
+        if existing is None:
+            raise DuplicateSubmission('idempotency key collided; existing row could not be recovered')
+        return decide_existing(existing)
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def mark_submitted(conn, idempotency_key, provider_task_id=None):
@@ -190,6 +219,15 @@ def confirm_success(conn, idempotency_key, actual_amount=None, provider_task_id=
     charged = row['reserved_amount'] if actual_amount is None else float(actual_amount)
     if charged < 0 or not _finite(charged):
         raise LedgerError('actual_amount must be a finite non-negative number')
+    state = budget_state(conn, row['account_id'])
+    # Releasing this reservation returns reserved_amount to the pool; spent then rises by charged.
+    # available would go negative if charged exceeds reserved_amount plus current available.
+    room = row['reserved_amount'] + state['available']
+    if charged > room + 1e-9:
+        raise InsufficientBudget(
+            'actual amount %.4f exceeds authorized budget (room %.4f); increase authorized budget before confirming'
+            % (charged, room)
+        )
     now = _now()
     conn.execute(
         'UPDATE submissions SET status=?, actual_amount=?, provider_task_id=?, updated_at=? WHERE idempotency_key=?',
@@ -224,12 +262,16 @@ def confirm_failure(conn, idempotency_key, provider_task_id=None):
 
 
 def release(conn, idempotency_key):
-    """Drop an unused reservation that was never accepted."""
+    """Drop an unused reservation that was never sent to the provider."""
     row = _require(conn, idempotency_key)
     if row['status'] == 'released':
         return row
-    if row['status'] not in ('reserved', 'submission_unknown'):
-        raise LedgerError('only reserved or unknown submissions can be released')
+    if row['status'] == 'submission_unknown':
+        raise UnknownAcceptance(
+            'submission_unknown cannot be released; confirm_success or confirm_failure after recovery'
+        )
+    if row['status'] != 'reserved':
+        raise LedgerError('only reserved submissions that were never sent can be released')
     now = _now()
     conn.execute(
         'UPDATE submissions SET status=?, updated_at=? WHERE idempotency_key=?',
@@ -244,17 +286,25 @@ def release(conn, idempotency_key):
 
 
 def assert_can_submit(conn, idempotency_key, request_hash):
-    """Raise if a new provider submit would duplicate or collide with an unknown acceptance."""
+    """Allow the first provider submit only after a live reservation.
+
+    No row, or a failed/released row, cannot be submitted (reserve first; retry with a new key).
+    reserved allows the first submit. submitted, succeeded, and submission_unknown are forbidden.
+    """
     existing = get_submission(conn, idempotency_key)
     if existing is None:
-        return
+        raise LedgerError('no reservation for this key; reserve budget before submitting')
     if existing['request_hash'] != request_hash:
         raise DuplicateSubmission('idempotency key reused with a different request')
+    if existing['status'] == 'reserved':
+        return existing
     if existing['status'] == 'submission_unknown':
         raise UnknownAcceptance('prior submit is submission_unknown; query the provider instead of resubmitting')
-    if existing['status'] in ('reserved', 'submitted', 'succeeded'):
+    if existing['status'] in ('submitted', 'succeeded'):
         raise DuplicateSubmission('submission already %s; do not submit again' % existing['status'])
-    raise DuplicateSubmission('key already closed as %s; use a new idempotency key to retry' % existing['status'])
+    raise DuplicateSubmission(
+        'key already closed as %s; use a new idempotency key, then reserve, before retrying' % existing['status']
+    )
 
 
 def _require(conn, key):

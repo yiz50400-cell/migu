@@ -74,7 +74,7 @@ def plan(route):
         'route': route, 'mode': 'PLAN_ONLY',
         'steps': ['Install/update Migu and companion skill with backups',
                   'Reuse tools; prepare uv-managed Python and route dependencies',
-                  'Install official Hypit CLI/skill for generation' if route in ('generate','full') else 'No generation installation',
+                  'Install or keep official Hypit CLI/skill when needed; API video routes do not require Hypit Runtime, and a working Hypit install is not removed' if route in ('generate','full') else 'No generation installation',
                   'Install bundled collector and yt-dlp' if route in ('discover','full') else 'No discovery installation',
                   'Install bundled editor and locked Remotion dependencies' if route in ('edit','full') else 'No editor installation',
                   'Write local paths and installation report'],
@@ -220,7 +220,7 @@ class Installer:
             source=self.checkout('hypit',self.lock['hypit_skill'])
             install_skill(source/self.lock['hypit_skill']['path'],self.skills_dir/'hypit',self.runtime/'backups')
             shutil.copy2(source/'LICENSE',self.skills_dir/'hypit/UPSTREAM-LICENSE')
-        self.pending('Verify existing video Runtime/account; images reuse the customer-selected Key/URL. Ask only for genuinely missing configuration; no generation during deployment.')
+        self.pending('If an API video channel is configured, Hypit Runtime is optional; otherwise verify the existing video channel or account. Keep any working Hypit install. Images use the configured image2.5flare Key/URL. Ask only for genuinely missing configuration; no generation during deployment.')
 
     def collector(self):
         if not self.uv: raise RuntimeError('uv setup incomplete')

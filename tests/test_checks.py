@@ -48,7 +48,8 @@ class HandoffTests(unittest.TestCase):
                   'reviewed_at': '2000-01-01T00:00:00Z'}
         asset['review'] = self.record('review.json', json.dumps(review).encode())
         return {'required_shots': ['s1'], 'assets': [asset],
-                'shots': [{'id': 's1', 'asset_id': 'a1', 'in': 0, 'out': 0.8}]}
+                'shots': [{'id': 's1', 'asset_id': 'a1', 'requested_duration': 1.0,
+                           'in': 0, 'out': 0.8, 'output_duration': 0.8}]}
 
     def validate(self, data=None):
         self.manifest.write_text(json.dumps(self.data if data is None else data))
@@ -122,6 +123,86 @@ class HandoffTests(unittest.TestCase):
                 p.write_bytes(content)
             with self.assertRaisesRegex(handoff.Invalid, 'missing or empty'):
                 self.validate()
+
+    def _extra_shots(self, count):
+        data = self.data
+        data['required_shots'] = ['s%s' % i for i in range(count)]
+        data['shots'] = []
+        for i, sid in enumerate(data['required_shots']):
+            data['shots'].append({
+                'id': sid, 'asset_id': 'a1', 'requested_duration': 0.8,
+                'in': 0, 'out': 0.8, 'output_duration': 0.8,
+            })
+        return data
+
+    def test_usual_max_six_shots_ok(self):
+        self.assertEqual(self.validate(self._extra_shots(6))['covered_shots'], 6)
+
+    def test_more_than_six_shots_rejected(self):
+        with self.assertRaisesRegex(handoff.Invalid, 'usual remake uses at most 6'):
+            self.validate(self._extra_shots(7))
+
+    def test_override_allows_more_than_six_but_not_twenty(self):
+        data = self._extra_shots(7)
+        data['allow_more_than_usual_shots'] = True
+        data['allow_more_than_usual_shots_reason'] = 'client locked extra beats'
+        self.assertEqual(self.validate(data)['covered_shots'], 7)
+        data = self._extra_shots(20)
+        data['allow_more_than_usual_shots'] = True
+        data['allow_more_than_usual_shots_reason'] = 'still too many'
+        with self.assertRaisesRegex(handoff.Invalid, 'too many real shots'):
+            self.validate(data)
+
+    def test_override_requires_reason(self):
+        data = self._extra_shots(7)
+        data['allow_more_than_usual_shots'] = True
+        with self.assertRaisesRegex(handoff.Invalid, 'needs a reason'):
+            self.validate(data)
+
+    def test_missing_requested_duration(self):
+        del self.data['shots'][0]['requested_duration']
+        with self.assertRaisesRegex(handoff.Invalid, 'requested_duration'):
+            self.validate()
+
+    def test_output_duration_outside_usable_range(self):
+        self.data['shots'][0]['output_duration'] = 1.5
+        with self.assertRaisesRegex(handoff.Invalid, 'output_duration'):
+            self.validate()
+
+    def test_delivery_acceptance_required_when_present(self):
+        asset = self.data['assets'][0]
+        delivery = {
+            'path': asset['path'], 'sha256': asset['sha256'], 'duration': 0.8,
+            'acceptance': {
+                'verdict': 'pass',
+                'cuts': {'checked': True, 'notes': 'cuts match plan'},
+                'continuity': {'checked': True, 'notes': 'no continuity errors'},
+                'target_language': {'checked': True, 'notes': 'es-MX'},
+                'packaging_text': {'checked': True, 'notes': 'on-screen text remade'},
+                'subtitles': {'checked': True, 'notes': 'subtitles match language'},
+                'export': {'checked': True, 'notes': 'final file decoded'},
+            },
+        }
+        self.data['delivery'] = delivery
+        self.assertTrue(self.validate()['delivery_reviewed'])
+        delivery['acceptance']['verdict'] = 'pending'
+        with self.assertRaisesRegex(handoff.Invalid, 'not completion'):
+            self.validate()
+
+    def test_generation_success_is_not_completion(self):
+        asset = self.data['assets'][0]
+        self.data['delivery'] = {
+            'path': asset['path'], 'sha256': asset['sha256'], 'duration': 0.8,
+            'acceptance': {
+                'verdict': 'pass',
+                'cuts': {'checked': True}, 'continuity': {'checked': True},
+                'target_language': {'checked': True}, 'packaging_text': {'checked': True},
+                'subtitles': {'checked': True}, 'export': {'checked': True},
+                'generation_success_is_complete': True,
+            },
+        }
+        with self.assertRaisesRegex(handoff.Invalid, 'not completion'):
+            self.validate()
 
     def test_cli_reports_bad_json_without_traceback(self):
         self.manifest.write_text('{')
@@ -244,6 +325,23 @@ class PreflightTests(unittest.TestCase):
         (editor / 'scripts/deliver_video.py').unlink()
         result = self.assess('full', which=lambda _: 'synthetic-launcher')
         self.assertIn('editor toolkit: scripts/deliver_video.py', result['missing'])
+
+    def test_api_video_route_does_not_require_hypit(self):
+        config = {
+            'schema_version': 1,
+            'video_channels': [
+                {'id': 'api-main', 'kind': 'api', 'endpoint_name': 'configured-video',
+                 'account_ref': 'acct-a', 'credential_present': True},
+            ],
+        }
+        result = self.assess('generate', config, which=lambda n: 'ffmpeg' if n == 'ffmpeg' else None)
+        self.assertEqual(result['status'], 'PASS_LOCAL_ONLY')
+        self.assertNotIn('hypit CLI', result['missing'])
+        self.assertNotIn('hypit skill', result['missing'])
+
+    def test_legacy_generate_still_requires_hypit_without_channels(self):
+        result = self.assess('generate')
+        self.assertEqual(set(result['missing']), {'hypit CLI', 'hypit skill', 'ffmpeg'})
 
     def test_private_unknown_fields_not_echoed(self):
         config = {'schema_version': 1, 'private_field': 'SYNTHETIC-PRIVATE-VALUE'}

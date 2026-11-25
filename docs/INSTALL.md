@@ -24,7 +24,7 @@ Windows 可用 `py -3 scripts/install.py --apply`。不带 --apply 只显示计�
 - 优先复用 uv；缺少时通过当前 Python 的 pip 安装到仓库 .runtime/bootstrap。uv 管理 Python 3.12。
 - Node/npm 缺少或太旧时，使用已有 Homebrew/winget 安装兼容版本。
 - FFmpeg/FFprobe 缺少时使用已有 Homebrew/winget 安装。
-- Hypit CLI 缺少时把官方 @hypit/hypit 固定版本安装到 .runtime/hypit；缺官方 skill 时从官方仓库固定提交获取。保留现有可用安装。路径写入 hypit_path，执行时使用该路径。
+- 若将使用 Hypit，或尚未配置 API 视频渠道：Hypit CLI 缺少时把官方 @hypit/hypit 固定版本安装到 .runtime/hypit；缺官方 skill 时从官方仓库固定提交获取。保留现有可用安装，不要无故拆掉。路径写入 hypit_path，执行时使用该路径。已配置 API 视频渠道时，不再把缺少 Hypit Runtime 当作安装失败。
 - 采集独立虚拟环境、yt-dlp/curl_cffi/imageio-ffmpeg。
 - 剪辑工具箱 uv sync --frozen 和 Remotion npm ci。
 - 发现路线准备 Evil：复用现有可达服务；否则通过已有包管理器安装 Docker、从官方固定提交取得 Evil，生成本机随机服务密钥并启动 browser profile。Docker 首次系统许可由本人处理。采集服务启动后自动运行本机修复入口，验证或初始化内部凭据。
@@ -64,9 +64,9 @@ npx --yes --prefer-online @chatcut/cli@latest connect --allow-install --json
 
 安装写入 installation.json：distribution_root、collection_root、editor_toolkit_root、hypit_path、ffmpeg_path（存在时）。这些都是本机路径。旧路径仍可用就保留；失效时先定位现有环境再改，不删除原项目。
 
-客户截图若停在 DTK 创建管理员页面，按 [Windows 原地修复](WINDOWS-REPAIR.md) 继续。脚本优先验证已有采集凭据，仅在空实例上创建本机管理账号和单独的 tiktok:read 采集凭据。图片和视频分别复用客户已选接入；图片沿用其已配置的 Key、URL 和模型。
+客户截图若停在 DTK 创建管理员页面，按 [Windows 原地修复](WINDOWS-REPAIR.md) 继续。脚本优先验证已有采集凭据，仅在空实例上创建本机管理账号和单独的 tiktok:read 采集凭据。图片和视频分别复用客户已选接入；图片沿用其已配置的 Key、URL，模型固定为 image2.5flare。视频可填写多个渠道或多个账号。不要改客户已有的 DTK/管理员配置。
 
-完成安装后执行 preflight.py，并继续核实：Hypit version/配置状态、采集模块可导入、Evil readyz+browser-rpc+凭据、ChatCut list_projects、Remotion 模板加载。尚未填账号或缺点击就标记 ACTION_REQUIRED，不能宣称完整生产可用。真实生成/成片验收按用户任务和费用范围另行执行。
+完成安装后执行 preflight.py。已配置 API 视频渠道时，不把缺少 Hypit 列为缺失项，但仍可核实已有 Hypit 安装；未配置视频渠道的旧环境仍核实 Hypit version/配置状态。同时核实采集模块可导入、Evil readyz+browser-rpc+凭据、ChatCut list_projects、Remotion 模板加载。尚未填账号或缺点击就标记 ACTION_REQUIRED，不能宣称完整生产可用。真实生成/成片验收按用户任务和费用范围另行执行，安装与预检不得提交付费生成。
 
 ## 搜索登录条件与验收
 

@@ -4,5 +4,17 @@
   "editor_toolkit_root": null,
   "ffmpeg_path": null,
   "distribution_root": null,
-  "hypit_path": null
+  "hypit_path": null,
+  "image_model": "image2.5flare",
+  "video_channels": [
+    {
+      "id": "api-main",
+      "kind": "api",
+      "label": "configured-api-video",
+      "endpoint_name": "configured-video",
+      "account_ref": "primary",
+      "enabled": true,
+      "credential_present": false
+    }
+  ]
 }

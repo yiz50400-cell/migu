@@ -7,6 +7,12 @@ from pathlib import Path
 import shutil
 import sys
 
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+from video_channels import ChannelError, has_api_video_route, video_route_requires_hypit
+
 ROUTES = ('analyze', 'generate', 'discover', 'edit', 'full')
 
 
@@ -34,9 +40,23 @@ def assess(config_path, skills_dir, route, which=shutil.which):
             raise ValueError(key + ' must be an absolute directory path or null')
         return p
     if route in ('generate', 'full'):
+        try:
+            require_hypit = video_route_requires_hypit(config)
+            api_video = has_api_video_route(config)
+        except ChannelError as exc:
+            raise ValueError(str(exc)) from exc
         executable = folder('hypit_path')
-        add('hypit CLI', (executable.is_file() and os.access(executable, os.X_OK)) if executable else which('hypit'))
-        add('hypit skill', (skills_dir/'hypit/SKILL.md').is_file())
+        hypit_cli = (executable.is_file() and os.access(executable, os.X_OK)) if executable else which('hypit')
+        hypit_skill = (skills_dir/'hypit/SKILL.md').is_file()
+        if require_hypit:
+            add('hypit CLI', hypit_cli)
+            add('hypit skill', hypit_skill)
+        else:
+            add('api video channel', api_video)
+            if hypit_cli:
+                add('hypit CLI', True)
+            if hypit_skill:
+                add('hypit skill', True)
     if route in ('discover', 'full'):
         p = folder('collection_root')
         add('collection discovery adapter', p and (p/'workflow/unattended/evil_discovery.py').is_file())

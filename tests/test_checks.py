@@ -22,6 +22,7 @@ def load(name):
 
 
 handoff = load('check_handoff')
+acceptance = load('acceptance')
 preflight = load('preflight')
 FFMPEG = os.environ.get('MIGU_TEST_FFMPEG') or shutil.which('ffmpeg')
 
@@ -36,8 +37,16 @@ class HandoffTests(unittest.TestCase):
 
     def record(self, name, content):
         p = self.root / name
+        p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(content)
         return {'path': name, 'sha256': handoff.digest(p)}
+
+    def scene_still(self, shot_id, name=None, content=None):
+        name = name or ('scene-%s.png' % shot_id)
+        payload = content if content is not None else ('SYNTHETIC SCENE STILL %s' % shot_id).encode()
+        record = self.record(name, payload)
+        record['source'] = 'image2.5flare'
+        return record
 
     def fixture(self, media):
         asset = self.record('clip.mp4', media)
@@ -49,7 +58,8 @@ class HandoffTests(unittest.TestCase):
         asset['review'] = self.record('review.json', json.dumps(review).encode())
         return {'required_shots': ['s1'], 'assets': [asset],
                 'shots': [{'id': 's1', 'asset_id': 'a1', 'requested_duration': 1.0,
-                           'in': 0, 'out': 0.8, 'output_duration': 0.8}]}
+                           'in': 0, 'out': 0.8, 'output_duration': 0.8,
+                           'scene_reference': self.scene_still('s1')}]}
 
     def validate(self, data=None):
         self.manifest.write_text(json.dumps(self.data if data is None else data))
@@ -132,6 +142,7 @@ class HandoffTests(unittest.TestCase):
             data['shots'].append({
                 'id': sid, 'asset_id': 'a1', 'requested_duration': 0.8,
                 'in': 0, 'out': 0.8, 'output_duration': 0.8,
+                'scene_reference': self.scene_still(sid),
             })
         return data
 
@@ -209,6 +220,188 @@ class HandoffTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(SCRIPTS / 'check_handoff.py'), str(self.manifest)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(json.loads(result.stderr)['status'], 'BLOCKED')
+
+    def test_missing_scene_reference_blocks_handoff(self):
+        del self.data['shots'][0]['scene_reference']
+        with self.assertRaisesRegex(handoff.Invalid, 'missing scene reference still'):
+            self.validate()
+
+    def test_shared_identity_as_scene_reference_rejected(self):
+        face = self.record('actor-face.png', b'SYNTHETIC ACTOR FACE')
+        face['role'] = 'actor'
+        self.data['shared_identity_references'] = [face]
+        self.data['shots'][0]['scene_reference'] = {
+            'path': face['path'], 'sha256': face['sha256'], 'source': 'image2.5flare',
+        }
+        with self.assertRaisesRegex(handoff.Invalid, 'shared actor/product image'):
+            self.validate()
+
+    def test_primary_reference_must_be_scene_still(self):
+        face = self.record('actor-face.png', b'SYNTHETIC ACTOR FACE')
+        face['role'] = 'actor'
+        product = self.record('product.png', b'SYNTHETIC PRODUCT PACK')
+        product['role'] = 'product'
+        self.data['shared_identity_references'] = [face, product]
+        self.data['shots'][0]['identity_references'] = [face, product]
+        self.data['shots'][0]['primary_reference'] = face
+        with self.assertRaisesRegex(handoff.Invalid, 'primary/first-frame reference'):
+            self.validate()
+
+    def test_scene_still_with_additional_identity_refs_ok(self):
+        face = self.record('actor-face.png', b'SYNTHETIC ACTOR FACE')
+        face['role'] = 'actor'
+        product = self.record('product.png', b'SYNTHETIC PRODUCT PACK')
+        product['role'] = 'product'
+        scene = self.data['shots'][0]['scene_reference']
+        self.data['shared_identity_references'] = [face, product]
+        self.data['shots'][0]['identity_references'] = [face, product]
+        self.data['shots'][0]['primary_reference'] = {'path': scene['path'], 'sha256': scene['sha256']}
+        self.data['shots'][0]['video_references'] = {
+            'primary': {'path': scene['path'], 'sha256': scene['sha256']},
+            'additional': [face, product],
+        }
+        self.assertEqual(self.validate()['covered_shots'], 1)
+
+    def test_ready_for_video_blocks_identity_only_refs(self):
+        face = self.record('actor-face.png', b'SYNTHETIC ACTOR FACE')
+        face['role'] = 'actor'
+        product = self.record('product.png', b'SYNTHETIC PRODUCT PACK')
+        product['role'] = 'product'
+        plan = {
+            'required_shots': ['s1', 's2'],
+            'shared_identity_references': [face, product],
+            'shots': [
+                {
+                    'id': 's1',
+                    'references': [face, product],
+                },
+                {
+                    'id': 's2',
+                    'references': [face, product],
+                },
+            ],
+        }
+        self.manifest.write_text(json.dumps(plan))
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / 'check_handoff.py'), '--ready-for-video', str(self.manifest)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 1)
+        payload = json.loads(result.stderr)
+        self.assertEqual(payload['status'], 'BLOCKED')
+        self.assertIn('missing scene reference still', payload['error'])
+
+    def test_ready_for_video_accepts_per_shot_scene_stills(self):
+        face = self.record('actor-face.png', b'SYNTHETIC ACTOR FACE')
+        face['role'] = 'actor'
+        product = self.record('product.png', b'SYNTHETIC PRODUCT PACK')
+        product['role'] = 'product'
+        scene1 = self.scene_still('s1', name='shots/s1-hand-dropper.png')
+        scene2 = self.scene_still('s2', name='shots/s2-mid-portrait.png')
+        plan = {
+            'required_shots': ['s1', 's2'],
+            'shared_identity_references': [face, product],
+            'shots': [
+                {
+                    'id': 's1',
+                    'scene_reference': scene1,
+                    'identity_references': [face, product],
+                    'primary_reference': {'path': scene1['path'], 'sha256': scene1['sha256']},
+                },
+                {
+                    'id': 's2',
+                    'scene_reference': scene2,
+                    'identity_references': [face, product],
+                    'primary_reference': {'path': scene2['path'], 'sha256': scene2['sha256']},
+                },
+            ],
+        }
+        self.manifest.write_text(json.dumps(plan))
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / 'check_handoff.py'), '--ready-for-video', str(self.manifest)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload['status'], 'READY_FOR_VIDEO_SUBMIT')
+        self.assertEqual(payload['covered_shots'], 2)
+
+
+class SceneReferencePlanTests(unittest.TestCase):
+    def test_identity_only_shot_is_not_ready(self):
+        shots = [{
+            'id': 's1',
+            'references': [
+                {'path': 'actor-face.png', 'role': 'actor'},
+                {'path': 'dropper.png', 'role': 'product'},
+            ],
+        }]
+        with self.assertRaisesRegex(acceptance.PlanError, 'missing scene reference still'):
+            acceptance.check_scene_references(shots)
+
+    def test_face_plate_cannot_define_hand_closeup(self):
+        shared = [
+            {'path': 'actor-face.png', 'sha256': 'aaa', 'role': 'actor'},
+            {'path': 'dropper.png', 'sha256': 'bbb', 'role': 'product'},
+        ]
+        shots = [{
+            'id': 's1',
+            'scene_reference': {
+                'path': 'actor-face.png', 'sha256': 'aaa', 'source': 'image2.5flare',
+            },
+            'identity_references': shared,
+        }]
+        with self.assertRaisesRegex(acceptance.PlanError, 'shared actor/product image'):
+            acceptance.check_scene_references(shots, shared)
+
+    def test_same_bytes_as_identity_image_rejected(self):
+        shared = [{'path': 'actor-face.png', 'sha256': 'same-digest', 'role': 'actor'}]
+        shots = [{
+            'id': 's1',
+            'scene_reference': {
+                'path': 'shots/s1-pretend-scene.png',
+                'sha256': 'same-digest',
+                'source': 'image2.5flare',
+            },
+        }]
+        with self.assertRaisesRegex(acceptance.PlanError, 'shared actor/product image'):
+            acceptance.check_scene_references(shots, shared)
+
+    def test_hand_closeup_scene_still_with_identity_ok(self):
+        shared = [
+            {'path': 'actor-face.png', 'sha256': 'aaa', 'role': 'actor'},
+            {'path': 'dropper.png', 'sha256': 'bbb', 'role': 'product'},
+        ]
+        shots = [{
+            'id': 's1',
+            'scene_reference': {
+                'path': 'shots/s1-hand-dropper.png',
+                'sha256': 'ccc',
+                'source': 'image2.5flare',
+            },
+            'identity_references': shared,
+            'primary_reference': {'path': 'shots/s1-hand-dropper.png', 'sha256': 'ccc'},
+        }]
+        self.assertTrue(acceptance.check_scene_references(shots, shared))
+
+    def test_accepted_still_allowed(self):
+        shots = [{
+            'id': 's1',
+            'scene_reference': {
+                'path': 'shots/s1-accepted.png',
+                'sha256': 'ddd',
+                'source': 'accepted_still',
+            },
+        }]
+        self.assertTrue(acceptance.check_scene_references(shots))
+
+    def test_unknown_source_rejected(self):
+        shots = [{
+            'id': 's1',
+            'scene_reference': {'path': 'shots/s1.png', 'source': 'actor_identity'},
+        }]
+        with self.assertRaisesRegex(acceptance.PlanError, 'source must be image2.5flare'):
+            acceptance.check_scene_references(shots)
 
 
 @unittest.skipUnless(FFMPEG, 'Set MIGU_TEST_FFMPEG or install ffmpeg for real media tests')

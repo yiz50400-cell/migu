@@ -12,7 +12,7 @@ _SCRIPTS = Path(__file__).resolve().parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from acceptance import check_acceptance, check_duration_fields, check_shot_count
+from acceptance import check_acceptance, check_duration_fields, check_scene_references, check_shot_count
 
 
 class Invalid(ValueError):
@@ -113,6 +113,15 @@ def validate(manifest_path, ffprobe=None, ffmpeg='ffmpeg', inspector=None):
         require(durations[ident] > 0, 'nonpositive media duration')
     shots = data.get('shots')
     require(isinstance(shots, list), 'shots must be an array')
+    try:
+        check_scene_references(
+            shots,
+            data.get('shared_identity_references'),
+            root=root,
+            require_files=True,
+        )
+    except ValueError as exc:
+        raise Invalid(str(exc)) from exc
     covered = set()
     for shot in shots:
         require(isinstance(shot, dict), 'invalid shot record')
@@ -142,14 +151,60 @@ def validate(manifest_path, ffprobe=None, ffmpeg='ffmpeg', inspector=None):
             'limit': 'Does not independently authenticate generation receipts or verify visual review claims. Generation success is not completion.'}
 
 
+
+def validate_ready_for_video(manifest_path):
+    """Block video submit when a shot has only shared identity/product images."""
+    root = manifest_path.resolve().parent
+    data = json.loads(manifest_path.read_text(encoding='utf-8'))
+    require(isinstance(data, dict), 'manifest must be an object')
+    required = data.get('required_shots')
+    allow_more = data.get('allow_more_than_usual_shots') is True
+    if allow_more:
+        reason = data.get('allow_more_than_usual_shots_reason')
+        require(isinstance(reason, str) and reason.strip(), 'allow_more_than_usual_shots needs a reason')
+    try:
+        check_shot_count(required, allow_more=allow_more)
+    except ValueError as exc:
+        raise Invalid(str(exc)) from exc
+    shots = data.get('shots')
+    require(isinstance(shots, list), 'shots must be an array')
+    covered = set()
+    for shot in shots:
+        require(isinstance(shot, dict), 'invalid shot record')
+        sid = shot.get('id')
+        require(isinstance(sid, str) and sid in required and sid not in covered, 'unknown/duplicate shot id')
+        covered.add(sid)
+    require(covered == set(required), 'missing required shots: ' + ', '.join(sorted(set(required) - covered)))
+    try:
+        check_scene_references(
+            shots,
+            data.get('shared_identity_references'),
+            root=root,
+            require_files=True,
+        )
+    except ValueError as exc:
+        raise Invalid(str(exc)) from exc
+    return {
+        'status': 'READY_FOR_VIDEO_SUBMIT',
+        'covered_shots': len(covered),
+        'limit': 'Does not submit generation. Shared actor/product images cannot replace a per-shot scene still.',
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('manifest', type=Path)
+    parser.add_argument('--ready-for-video', action='store_true',
+                        help='Check per-shot scene stills before video submit; does not submit generation')
     parser.add_argument('--ffprobe', help='Optional ffprobe binary for additional stream metadata checks')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     args = parser.parse_args()
     try:
-        print(json.dumps(validate(args.manifest, args.ffprobe, args.ffmpeg), ensure_ascii=False))
+        if args.ready_for_video:
+            result = validate_ready_for_video(args.manifest)
+        else:
+            result = validate(args.manifest, args.ffprobe, args.ffmpeg)
+        print(json.dumps(result, ensure_ascii=False))
         return 0
     except (ValueError, OSError, TypeError, KeyError, subprocess.SubprocessError) as exc:
         print(json.dumps({'status': 'BLOCKED', 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
